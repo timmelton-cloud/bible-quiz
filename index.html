@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Who Is This? – Bible Characters</title>
+<!--
+  HOW IT WORKS: the player types their name, then gets 10 random cards, one at a time.
+  One go per card: a wrong answer buzzes and then shows the right name. Score at the end.
+  Change ROUND below for a longer or shorter game.
+  ART: every card has an original cartoon drawn in code, so no image files are needed.
+  To use your own picture for a card, add  image: "images/name.jpg"  to its entry.
+-->
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0f172a;
+    --card: #1e293b;
+    --raised: #273449;
+    --line: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --gold: #e9c46a;
+    --ok: #16a34a;
+    --bad: #dc2626;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body {
+    margin: 0; min-height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans);
+    -webkit-tap-highlight-color: transparent;
+  }
+  body { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  header {
+    position: sticky; top: 0; z-index: 5;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) clamp(16px, 3vw, 32px) 12px;
+    background: rgba(15, 23, 42, .94);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+  }
+  h1 { margin: 0; flex: 1 1 auto; font-family: var(--serif); font-weight: 600; font-size: clamp(1.3rem, 2.6vw, 1.75rem); }
+  .player { font-size: 1.05rem; }
+  .player b { color: var(--gold); font-weight: 600; }
+  .stat { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .stat b { color: var(--text); font-weight: 600; }
+
+  .btn {
+    appearance: none; font: inherit; font-size: 1rem; cursor: pointer;
+    min-height: 48px; padding: 10px 22px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+    touch-action: manipulation;
+  }
+  .btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1405; font-weight: 600; }
+  .btn:active { transform: scale(.97); }
+  .btn:focus-visible, .front:focus-visible, .choice:focus-visible, input:focus-visible {
+    outline: 3px solid var(--gold); outline-offset: 3px;
+  }
+
+  main { max-width: 760px; margin: 0 auto; padding: clamp(16px, 3vw, 32px); }
+
+  /* --- Start screen --- */
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: clamp(20px, 4vw, 36px); }
+  .panel h2 { margin: 0 0 10px; font-family: var(--serif); font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 600; }
+  .panel p { margin: 0 0 22px; color: var(--muted); line-height: 1.55; font-size: 1.05rem; max-width: 60ch; }
+  label { display: block; font-size: 1.05rem; margin-bottom: 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; }
+  input[type="text"] {
+    flex: 1 1 240px; min-height: 52px; padding: 10px 16px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--text);
+    font: inherit; font-size: 1.2rem;
+  }
+  .hint { min-height: 1.4em; margin: 10px 0 0; color: #fca5a5; font-size: .95rem; }
+
+  /* --- Progress dots --- */
+  .dots { display: flex; gap: 8px; justify-content: center; margin: 0 0 18px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--raised); border: 1px solid var(--line); }
+  .dot.now { background: var(--gold); border-color: var(--gold); }
+  .dot.ok { background: var(--ok); border-color: var(--ok); }
+  .dot.bad { background: var(--bad); border-color: var(--bad); }
+
+  /* --- Card + 3D flip --- */
+  .card { perspective: 1200px; }
+  .inner { display: grid; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2, .7, .2, 1); }
+  .card.flipped .inner { transform: rotateY(180deg); }
+  .face {
+    grid-area: 1 / 1;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: 16px; overflow: hidden;
+    background: var(--card); border: 1px solid var(--line);
+    display: flex; flex-direction: column;
+  }
+  .front { position: relative; cursor: pointer; }
+  .art { position: relative; flex: 1 1 auto; aspect-ratio: 2 / 1; background: var(--raised); }
+  .art svg, .art img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
+  .tag {
+    position: absolute; top: 12px; right: 12px;
+    padding: 6px 14px; border-radius: 999px; font-size: .9rem;
+    background: rgba(15, 23, 42, .8); color: var(--text);
+  }
+  .card.right .tag { background: var(--ok); color: #fff; }
+  .card.wrong .tag { background: var(--bad); color: #fff; }
+  .clue { padding: 16px 20px 20px; border-top: 1px solid var(--line); font-family: var(--serif); font-size: clamp(1.1rem, 2.4vw, 1.3rem); line-height: 1.4; }
+
+  .back { transform: rotateY(180deg); padding: 18px 20px 20px; gap: 10px; }
+  .back-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .back-top .btn { min-height: 42px; padding: 8px 16px; font-size: .95rem; }
+  .status { color: var(--muted); font-size: 1rem; text-align: right; }
+  .card.right .status { color: #4ade80; }
+  .card.wrong .status { color: #fca5a5; }
+  .question { margin: 6px 0 0; font-family: var(--serif); font-size: clamp(1.6rem, 4vw, 2rem); font-weight: 600; }
+  .back-clue { margin: 0; color: var(--muted); font-size: 1rem; line-height: 1.4; }
+  .choices { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+  .choice {
+    appearance: none; font: inherit; font-size: 1.2rem; cursor: pointer; text-align: left;
+    min-height: 56px; padding: 10px 16px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--raised); color: var(--text);
+    transition: background-color .2s, border-color .2s, opacity .2s;
+    touch-action: manipulation;
+  }
+  .choice:active { transform: scale(.985); }
+  .choice:disabled { cursor: default; opacity: .4; }
+  .choice.correct, .choice.reveal { background: var(--ok); border-color: var(--ok); color: #fff; opacity: 1; }
+  .choice.reveal { animation: pulse .9s ease-out 2; }
+  .choice.correct::after, .choice.reveal::after { content: "  ✓"; }
+  .choice.picked-wrong { background: var(--bad); border-color: var(--bad); color: #fff; opacity: 1; animation: shake .45s; }
+  .choice.picked-wrong::after { content: "  ✗"; }
+  .next { margin-top: 6px; align-self: stretch; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); } 40% { transform: translateX(7px); }
+    60% { transform: translateX(-5px); } 80% { transform: translateX(3px); }
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, .7); }
+    100% { box-shadow: 0 0 0 14px rgba(74, 222, 128, 0); }
+  }
+
+  /* --- Results --- */
+  .big-score { font-family: var(--serif); font-size: clamp(3rem, 10vw, 4.5rem); font-weight: 600; color: var(--gold); margin: 4px 0 6px; line-height: 1; }
+  .results { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 8px; }
+  .results li { display: flex; gap: 12px; align-items: baseline; padding: 10px 14px; border-radius: 10px; background: var(--raised); font-size: 1.05rem; }
+  .results .mark { font-weight: 700; width: 1.2em; flex: none; }
+  .results .ok .mark { color: #4ade80; }
+  .results .bad .mark { color: #f87171; }
+  .results small { color: var(--muted); font-size: .92rem; }
+
+  .notice { margin: 0 0 18px; padding: 14px 18px; border-radius: 12px; font-size: 1.05rem; line-height: 1.5; }
+  .notice.warn { background: #fef3c7; color: #422006; }
+  .notice.err { background: #fee2e2; color: #450a0a; word-break: break-word; }
+  @media (prefers-reduced-motion: reduce) {
+    .inner { transition: none; }
+    .choice.picked-wrong, .choice.reveal { animation: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Who is this?</h1>
+  <span class="player" id="playerTag" hidden>Player: <b id="playerName"></b></span>
+  <span class="stat" id="progress" hidden></span>
+  <span class="stat" id="scoreTag" hidden>Score <b id="score">0</b></span>
+</header>
+
+<main>
+  <p class="notice warn" id="jsWarn">⚠ This app isn’t running the game, so the Start button won’t work here. Open the file in Chrome instead: in your Files app, long-press the file, tap <b>Open with</b>, then choose <b>Chrome</b>.</p>
+  <p class="notice err" id="errBox" hidden></p>
+  <!-- Start -->
+  <section class="screen" id="start">
+    <div class="panel">
+      <h2>Bible character challenge</h2>
+      <p>You’ll get 10 cards, one at a time. Look at the picture and the clue, tap the card, then choose who it is. You only get one go at each card, so think carefully!</p>
+      <div id="startForm">
+        <label for="nameInput">Who’s playing?</label>
+        <div class="row">
+          <input type="text" id="nameInput" autocomplete="off" maxlength="20" placeholder="Type your name" enterkeyhint="go" spellcheck="false">
+          <button class="btn primary" id="startBtn" type="button">Start game</button>
+        </div>
+        <p class="hint" id="nameHint" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Play -->
+  <section class="screen" id="play" hidden>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <div id="stage"></div>
+  </section>
+
+  <!-- Results -->
+  <section class="screen" id="end" hidden>
+    <div class="panel">
+      <h2 id="endTitle"></h2>
+      <div class="big-score" id="endScore"></div>
+      <p id="endMsg"></p>
+      <ul class="results" id="resultList"></ul>
+      <div class="row">
+        <button class="btn primary" id="again" type="button">Play again</button>
+        <button class="btn" id="changePlayer" type="button">Change player</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Runs first: hides the "not running" warning and shows any error on screen.
+  document.getElementById("jsWarn").hidden = true;
+  window.addEventListener("error", function (e) {
+    var box = document.getElementById("errBox");
+    box.hidden = false;
+    box.textContent = "Something went wrong – please screenshot this: " + (e.message || e) + (e.lineno ? " (line " + e.lineno + ")" : "");
+  });
+</script>
+<script>
+/* ---------- Original cartoon art (inline SVG, no files needed) ---------- */
+const ART = (() => {
+  const O = "#2b1c12";
+  let uid = 0;
+  const st = (w = 2.5) => `stroke="${O}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
+  const n = v => Math.round(v * 10) / 10;
+  const g = (x, y, s, inner, flip, rot) =>
+    `<g transform="translate(${x},${y})${rot ? ` rotate(${rot})` : ""} scale(${flip ? -s : s},${s})">${inner}</g>`;
+
+  function scene(top, bottom, content) {
+    const id = "sky" + uid++;
+    return `<svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">` +
+      `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient></defs>` +
+      `<rect width="400" height="200" fill="url(#${id})"/>${content}</svg>`;
+  }
+
+  /* ---- Scenery ---- */
+  const ground = (c, y = 165) => `<path d="M-5,${y} Q100,${y - 8} 200,${y} T405,${y} V205 H-5Z" fill="${c}" ${st()}/>`;
+  const hills = (c, y = 140) => `<path d="M-5,${y} Q60,${y - 30} 130,${y - 6} Q200,${y - 34} 270,${y - 8} Q340,${y - 28} 405,${y - 4} V205 H-5Z" fill="${c}"/>`;
+  const cloud = (x, y, s, c = "#fff") => g(x, y, s, `<path d="M-40,10 Q-46,-8 -26,-10 Q-22,-28 0,-24 Q14,-36 30,-20 Q48,-18 42,0 Q46,12 30,12 L-30,12 Q-44,14 -40,10Z" fill="${c}" ${st(2)}/>`);
+  const bolt = (x, y, s) => g(x, y, s, `<path d="M0,0 L-14,30 L-2,30 L-12,60 L16,22 L4,22 L14,0Z" fill="#ffe066" ${st(2)}/>`);
+  function rain(x0, x1, y0, y1, count, c) {
+    let r = "";
+    for (let i = 0; i < count; i++) {
+      const x = x0 + ((i * 37) % (x1 - x0)), y = y0 + ((i * 53) % (y1 - y0));
+      r += `<path d="M${x},${y} l-4,10" stroke="${c}" stroke-width="2" stroke-linecap="round"/>`;
+    }
+    return r;
+  }
+  function stars(count, maxY = 110) {
+    let r = "";
+    for (let i = 0; i < count; i++) r += `<circle cx="${(i * 71) % 400}" cy="${8 + ((i * 43) % maxY)}" r="${i % 3 ? 1.2 : 2}" fill="#fff8d6"/>`;
+    return r;
+  }
+  function waves(y, c, amp = 8, step = 40) {
+    let d = `M-10,${y}`;
+    for (let x = -10; x < 410; x += step) d += ` q${step / 4},${-amp} ${step / 2},0 t${step / 2},0`;
+    return `<path d="${d} V205 H-10Z" fill="${c}" ${st()}/>`;
+  }
+  function rays(cx, cy, count, c, op = 0.3, len = 500) {
+    let r = "";
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2, b = a + Math.PI / count;
+      r += `<path d="M${cx},${cy} L${n(cx + len * Math.cos(a))},${n(cy + len * Math.sin(a))} L${n(cx + len * Math.cos(b))},${n(cy + len * Math.sin(b))}Z" fill="${c}" opacity="${op}"/>`;
+    }
+    return r;
+  }
+  function pillar(x, y, w, h, c = "#e3d3ad", line = "#b9a57a") {
+    let f = "";
+    for (let i = 1; i < 4; i++) f += `<path d="M${x + (w * i) / 4},${y + 4} V${y + h - 4}" stroke="${line}" stroke-width="2"/>`;
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}" ${st()}/>${f}` +
+      `<rect x="${x - 6}" y="${y - 10}" width="${w + 12}" height="10" rx="2" fill="${c}" ${st()}/>` +
+      `<rect x="${x - 6}" y="${y + h}" width="${w + 12}" height="10" rx="2" fill="${c}" ${st()}/>`;
+  }
+  const eCol = (x, y, w, h) => pillar(x, y, w, h, "#ecdcb0") +
+    `<rect x="${x}" y="${y + 8}" width="${w}" height="7" fill="#2a9d8f"/><rect x="${x}" y="${y + 18}" width="${w}" height="4" fill="#c1440e"/>`;
+  const pyramid = (x, y, w, h, c = "#e0b265") =>
+    `<path d="M${x - w / 2},${y} L${x},${y - h} L${x + w / 2},${y}Z" fill="${c}" ${st(2)}/><path d="M${x},${y - h} L${x + w / 2},${y} L${x + w / 6},${y}Z" fill="#000" opacity=".12"/>`;
+  const tree = (x, y, s) => g(x, y, s, `<rect x="-6" y="-50" width="12" height="50" fill="#7a4a22" ${st(2)}/><circle cx="-16" cy="-58" r="20" fill="#5e9c4a" ${st(2)}/><circle cx="16" cy="-60" r="20" fill="#5e9c4a" ${st(2)}/><circle cx="0" cy="-78" r="22" fill="#6aab55" ${st(2)}/>`);
+  const palm = (x, y, s) => g(x, y, s, `<path d="M0,0 Q-6,-40 6,-80" fill="none" stroke="${O}" stroke-width="11" stroke-linecap="round"/><path d="M0,0 Q-6,-40 6,-80" fill="none" stroke="#9c6b3c" stroke-width="7" stroke-linecap="round"/>` +
+    [[-40, -66], [-30, -96], [40, -96], [46, -66], [6, -110]].map(([a, b]) => `<path d="M6,-80 Q${(6 + a) / 2},${b - 14} ${a},${b} Q${(6 + a) / 2},${b - 4} 6,-80Z" fill="#4f9a45" ${st(2)}/>`).join(""));
+  const house = (x, y, w, h, c = "#e3c08f") =>
+    `<rect x="${x}" y="${y - h}" width="${w}" height="${h}" fill="${c}" ${st(2)}/><rect x="${x - 3}" y="${y - h - 5}" width="${w + 6}" height="5" fill="#a0693a" ${st(1.5)}/><rect x="${x + w / 2 - 5}" y="${y - 16}" width="10" height="16" fill="#5a3a1a"/>`;
+  const camel = (x, y, s) => g(x, y, s, `<g fill="#9b6b3a" opacity=".7"><ellipse cx="0" cy="-22" rx="18" ry="9"/><ellipse cx="-4" cy="-30" rx="8" ry="7"/><ellipse cx="8" cy="-29" rx="7" ry="6"/><path d="M14,-24 L24,-38 L32,-38 L32,-33 L26,-32 L20,-20Z"/><rect x="-14" y="-16" width="3" height="16"/><rect x="-6" y="-16" width="3" height="16"/><rect x="6" y="-16" width="3" height="16"/><rect x="12" y="-16" width="3" height="16"/></g>`);
+  const flame = (x, y, s) => g(x, y, s, `<path d="M0,0 Q-18,-10 -8,-30 Q-6,-18 0,-22 Q-4,-38 8,-48 Q6,-30 16,-22 Q20,-8 0,0Z" fill="#f77f00" ${st(2)}/><path d="M0,-4 Q-8,-10 -2,-20 Q2,-14 6,-18 Q10,-8 0,-4Z" fill="#fcbf49"/>`);
+
+  /* ---- Animals and objects ---- */
+  const bigFish = (x, y, s) => g(x, y, s,
+    `<path d="M120,0 L175,-45 Q166,0 175,45Z" fill="#4a7fa3" ${st()}/>` +
+    `<path d="M30,-60 Q55,-92 80,-56Z" fill="#4a7fa3" ${st()}/>` +
+    `<ellipse cx="20" cy="0" rx="115" ry="62" fill="#5b93b8" ${st()}/>` +
+    `<path d="M-70,24 Q20,70 112,16 Q30,52 -70,24Z" fill="#a9d1e6"/>` +
+    `<path d="M-95,-12 L-38,8 L-95,32 Q-108,10 -95,-12Z" fill="#3a1420" ${st()}/>` +
+    `<path d="M-90,-6 l6,6 l4,-5 l5,6 l5,-5 M-90,26 l6,-6 l4,5 l5,-6" fill="none" stroke="#fff" stroke-width="2"/>` +
+    `<circle cx="-40" cy="-26" r="13" fill="#fff" ${st()}/><circle cx="-45" cy="-25" r="6" fill="#111"/><circle cx="-47" cy="-27" r="2" fill="#fff"/>` +
+    `<path d="M30,-10 Q42,8 32,26 M50,-10 Q62,8 52,26" fill="none" stroke="#3d6f90" stroke-width="3"/>`);
+  const elephant = (x, y, s, flip) => g(x, y, s,
+    `<rect x="-26" y="-14" width="11" height="18" fill="#9aa5b1" ${st(2)}/><rect x="12" y="-14" width="11" height="18" fill="#9aa5b1" ${st(2)}/>` +
+    `<ellipse cx="0" cy="-26" rx="34" ry="22" fill="#a9b4c0" ${st()}/>` +
+    `<path d="M36,-34 Q54,-28 48,-6 Q46,2 52,4" fill="none" stroke="${O}" stroke-width="10" stroke-linecap="round"/><path d="M36,-34 Q54,-28 48,-6 Q46,2 52,4" fill="none" stroke="#a9b4c0" stroke-width="5.5" stroke-linecap="round"/>` +
+    `<circle cx="30" cy="-36" r="15" fill="#a9b4c0" ${st()}/><path d="M18,-48 Q2,-36 16,-22 Q28,-30 18,-48Z" fill="#8f9aa6" ${st(2)}/><circle cx="35" cy="-40" r="2.5" fill="#111"/>` +
+    `<path d="M-34,-28 Q-42,-24 -40,-16" fill="none" ${st(2)}/>`, flip);
+  const sheep = (x, y, s, flip) => g(x, y, s,
+    `<rect x="-12" y="-8" width="5" height="12" fill="#333"/><rect x="6" y="-8" width="5" height="12" fill="#333"/>` +
+    `<path d="M-22,-10 Q-26,-24 -14,-26 Q-10,-36 2,-32 Q12,-38 18,-28 Q28,-24 22,-12 Q20,-4 8,-6 Q0,-2 -8,-6 Q-20,-2 -22,-10Z" fill="#fbfbf5" ${st(2)}/>` +
+    `<ellipse cx="24" cy="-22" rx="8" ry="10" fill="#3a3a3a" ${st(2)}/><circle cx="27" cy="-25" r="1.8" fill="#fff"/>`, flip);
+  const frog = (x, y, s) => g(x, y, s,
+    `<path d="M-14,6 L-21,10 M14,6 L21,10" ${st(2.5)}/><ellipse cx="0" cy="0" rx="14" ry="10" fill="#5cb85c" ${st(2)}/>` +
+    `<circle cx="-7" cy="-9" r="5" fill="#5cb85c" ${st(2)}/><circle cx="7" cy="-9" r="5" fill="#5cb85c" ${st(2)}/>` +
+    `<circle cx="-7" cy="-9" r="2" fill="#111"/><circle cx="7" cy="-9" r="2" fill="#111"/><path d="M-6,2 Q0,6 6,2" fill="none" ${st(1.5)}/>`);
+  const donkey = (x, y, s, flip) => g(x, y, s,
+    `<path d="M-10,50 L-6,-6 L14,-10 L20,50Z" fill="#8d8d8d" ${st()}/>` +
+    `<path d="M-2,-20 L-10,-52 L8,-24Z" fill="#8d8d8d" ${st(2)}/><path d="M8,-22 L12,-56 L18,-22Z" fill="#8d8d8d" ${st(2)}/>` +
+    `<ellipse cx="18" cy="-12" rx="25" ry="13" transform="rotate(20 18 -12)" fill="#9a9a9a" ${st()}/>` +
+    `<ellipse cx="36" cy="-3" rx="10" ry="9" fill="#d6d0c4" ${st(2)}/><circle cx="12" cy="-17" r="2.6" fill="#111"/>`, flip);
+  const manger = (x, y, s) => g(x, y, s,
+    `<path d="M-30,0 L-38,22 M30,0 L38,22" ${st(4)}/><path d="M-42,-30 L42,-30 L30,0 L-30,0Z" fill="#9c6b3c" ${st()}/>` +
+    `<path d="M-44,-30 Q-32,-42 -20,-32 Q-8,-44 4,-32 Q16,-44 28,-32 Q40,-42 44,-30Z" fill="#e9c46a" ${st(1.5)}/>` +
+    `<ellipse cx="4" cy="-38" rx="24" ry="11" fill="#f5efe0" ${st(2)}/><circle cx="-17" cy="-42" r="10" fill="#e0a878" ${st(2)}/>` +
+    `<path d="M-22,-43 q2,2 4,0 M-15,-43 q2,2 4,0" fill="none" ${st(1.5)}/><circle cx="-21" cy="-38" r="2" fill="#e07a5f" opacity=".5"/>`);
+  const scrollFlat = (x, y, w) =>
+    `<rect x="${x}" y="${y - 10}" width="${w}" height="20" fill="#f3e6c4" ${st(2)}/>` +
+    `<rect x="${x - 6}" y="${y - 13}" width="9" height="26" rx="3" fill="#a0693a" ${st(2)}/><rect x="${x + w - 3}" y="${y - 13}" width="9" height="26" rx="3" fill="#a0693a" ${st(2)}/>` +
+    `<path d="M${x + 8},${y - 4} H${x + w - 8} M${x + 8},${y + 1} H${x + w - 14} M${x + 8},${y + 6} H${x + w - 10}" stroke="#9c8a63" stroke-width="1.5"/>`;
+  const flower = (x, y, r = 4) => [0, 72, 144, 216, 288].map(a => `<circle cx="${n(x + r * Math.cos(a * Math.PI / 180))}" cy="${n(y + r * Math.sin(a * Math.PI / 180))}" r="${r}" fill="#fbd3e0" stroke="#d48aa7" stroke-width="1"/>`).join("") + `<circle cx="${x}" cy="${y}" r="${r * 0.6}" fill="#f4c430"/>`;
+
+  /* ---- People ---- */
+  const POSES = {
+    down: [[-24, -48], [24, -48]], up: [[-32, -158], [32, -158]], upR: [[-24, -48], [30, -160]],
+    wide: [[-58, -100], [58, -100]], pray: [[-5, -80], [5, -80]], front: [[-14, -66], [14, -66]],
+    pointR: [[-24, -48], [60, -108]], holdR: [[-24, -48], [30, -72]], run: [[-46, -64], [44, -112]],
+    reach: [[-36, -156], [42, -150]]
+  };
+  function person(x, y, s, o = {}, flip = false) {
+    const sk = o.skin || "#c98b5a", robe = o.robe || "#8a6a45", sl = o.sleeve || robe;
+    const hc = o.hair || "#3a2416", bc = o.beardC || hc, kneel = !!o.kneel;
+    const pz = POSES[o.pose || "down"], lh = o.lh || pz[0], rh = o.rh || pz[1];
+    const lx = o.look || 0, ly = o.lookY || 0;
+    let v = o.under || "";
+
+    if (o.head === "veil") v += `<path d="M-30,-112 Q-36,-156 0,-156 Q36,-156 30,-112 L36,-70 L-36,-70Z" fill="${o.veil}" ${st()}/>`;
+    else if (o.hairStyle === "long" || o.hairStyle === "curlyLong") v += `<path d="M-26,-118 Q-34,-80 -26,-70 L26,-70 Q34,-80 26,-118 Q24,-150 0,-150 Q-24,-150 -26,-118Z" fill="${hc}" ${st()}/>`;
+    if (o.head === "nemes") {
+      v += `<path d="M-24,-130 L-36,-80 L36,-80 L24,-130Z" fill="#e9c46a" ${st()}/>`;
+      v += [-120, -110, -100, -90].map(yy => { const hw = 24 + (yy + 130) * 0.24; return `<path d="M${n(-hw)},${yy} H${n(hw)}" stroke="#1d4e89" stroke-width="4"/>`; }).join("");
+    }
+
+    v += kneel
+      ? `<path d="M-16,-98 Q-30,-74 -26,-44 Q-28,-40 -20,-40 L42,-40 Q50,-40 47,-50 L22,-54 Q26,-76 16,-98Z" fill="${robe}" ${st()}/>`
+      : `<ellipse cx="-12" cy="-1" rx="9" ry="4" fill="#6b4423" ${st(2)}/><ellipse cx="12" cy="-1" rx="9" ry="4" fill="#6b4423" ${st(2)}/>` +
+        `<path d="M-16,-98 Q-32,-50 -32,-4 L32,-4 Q32,-50 16,-98Z" fill="${robe}" ${st()}/>`;
+    if (o.belt && !kneel) v += `<path d="M-26,-62 Q0,-56 26,-62 L27,-54 Q0,-48 -27,-54Z" fill="${o.belt}" ${st(2)}/>`;
+    v += o.collar
+      ? `<path d="M-20,-97 Q0,-68 20,-97 Q0,-88 -20,-97Z" fill="#e9c46a" ${st(2)}/><path d="M-14,-90 Q0,-78 14,-90" fill="none" stroke="#1d4e89" stroke-width="3"/>`
+      : `<path d="M-9,-97 L0,-86 L9,-97" fill="none" stroke="${O}" stroke-width="2"/>`;
+    v += o.mid || "";
+
+    for (const [sx, h] of [[-15, lh], [15, rh]]) {
+      v += `<path d="M${sx},-90 L${h[0]},${h[1]}" stroke="${O}" stroke-width="15" stroke-linecap="round"/>` +
+        `<path d="M${sx},-90 L${h[0]},${h[1]}" stroke="${sl}" stroke-width="10" stroke-linecap="round"/>` +
+        `<circle cx="${h[0]}" cy="${h[1]}" r="6.5" fill="${sk}" ${st(2)}/>`;
+    }
+
+    v += `<rect x="-7" y="-104" width="14" height="10" fill="${sk}"/>` +
+      `<circle cx="-21" cy="-118" r="5" fill="${sk}" ${st(2)}/><circle cx="21" cy="-118" r="5" fill="${sk}" ${st(2)}/>` +
+      `<circle cx="0" cy="-120" r="22" fill="${sk}" ${st()}/>`;
+
+    const hs = o.hairStyle;
+    const cap = `<path d="M-23,-116 Q-25,-147 0,-146 Q25,-147 23,-116 Q20,-132 8,-135 Q0,-130 -8,-135 Q-20,-132 -23,-116Z" fill="${hc}" ${st(2)}/>`;
+    if (hs === "short" || hs === "long") v += cap;
+    if (hs === "curly" || hs === "curlyLong") v += cap + [[-21, -128], [-13, -139], [0, -143], [13, -139], [21, -128]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="7" fill="${hc}" ${st(1.5)}/>`).join("");
+    if (hs === "bald") v += `<path d="M-23,-108 Q-25,-124 -19,-131 L-16,-112Z" fill="${hc}" ${st(1.5)}/><path d="M23,-108 Q25,-124 19,-131 L16,-112Z" fill="${hc}" ${st(1.5)}/><ellipse cx="-7" cy="-136" rx="7" ry="3" fill="#fff" opacity=".35"/>`;
+
+    const eye = (ex, kind) => {
+      if (kind === "closed") return `<path d="M${ex - 4},-120 Q${ex},-116 ${ex + 4},-120" fill="none" ${st(2)}/>`;
+      const big = kind === "wide";
+      return `<ellipse cx="${ex}" cy="-121" rx="${big ? 5.5 : 4.2}" ry="${big ? 6.5 : 5}" fill="#fff" ${st(1.5)}/><circle cx="${ex + lx}" cy="${-120 + ly}" r="${big ? 2 : 2.4}" fill="#1b1b1b"/>`;
+    };
+    const ek = o.eyes || "open";
+    v += eye(-8, ek === "wink" ? "closed" : ek) + eye(8, ek === "wink" ? "open" : ek);
+    const brows = {
+      neutral: ["M-13,-131 L-3,-131", "M3,-131 L13,-131"], angry: ["M-13,-134 L-3,-129", "M3,-129 L13,-134"],
+      worried: ["M-13,-129 L-3,-134", "M3,-134 L13,-129"], happy: ["M-13,-130 Q-8,-134 -3,-131", "M3,-131 Q8,-134 13,-130"],
+      raised: ["M-13,-131 L-3,-131", "M3,-136 Q8,-140 13,-135"]
+    }[o.mood || "neutral"];
+    v += brows.map(d => `<path d="${d}" fill="none" stroke="${hs && hs !== "bald" ? hc : O}" stroke-width="3" stroke-linecap="round"/>`).join("");
+    if (o.old) v += `<path d="M-17,-125 l-4,-2 M-17,-121 l-5,0 M17,-125 l4,-2 M17,-121 l5,0" ${st(1.2)}/>`;
+    v += `<path d="M-1,-117 Q4,-112 -1,-110" fill="none" ${st(1.8)}/>`;
+    v += `<circle cx="-14" cy="-110" r="4" fill="#e07a5f" opacity=".35"/><circle cx="14" cy="-110" r="4" fill="#e07a5f" opacity=".35"/>`;
+
+    if (o.beard === "short") v += `<path d="M-21,-122 Q-22,-98 0,-92 Q22,-98 21,-122 Q16,-108 9,-106 Q0,-100 -9,-106 Q-16,-108 -21,-122Z" fill="${bc}" ${st(2)}/>`;
+    if (o.beard === "long") v += `<path d="M-22,-122 Q-26,-88 0,-70 Q26,-88 22,-122 Q16,-108 9,-106 Q0,-100 -9,-106 Q-16,-108 -22,-122Z" fill="${bc}" ${st(2)}/>`;
+    if (o.beard === "pharaoh") v += `<rect x="-4" y="-101" width="8" height="15" rx="2" fill="#3a2a1a" ${st(1.5)}/>`;
+    if (o.beard === "short" || o.beard === "long") v += `<path d="M-10,-108 Q-5,-112 0,-109 Q5,-112 10,-108 Q5,-105 0,-106 Q-5,-105 -10,-108Z" fill="${bc}" ${st(1.5)}/>`;
+
+    v += {
+      smile: `<path d="M-7,-105 Q0,-98 7,-105" fill="none" ${st(2.2)}/>`,
+      grin: `<path d="M-8,-106 Q0,-95 8,-106Z" fill="#fff" ${st(2)}/>`,
+      open: `<ellipse cx="0" cy="-103" rx="4" ry="5" fill="#6b2121" ${st(1.8)}/>`,
+      small: `<ellipse cx="0" cy="-103" rx="2.5" ry="3" fill="#6b2121" ${st(1.5)}/>`,
+      shout: `<ellipse cx="0" cy="-102" rx="6" ry="7" fill="#6b2121" ${st(1.8)}/>`,
+      frown: `<path d="M-6,-101 Q0,-107 6,-101" fill="none" ${st(2.2)}/>`,
+      flat: `<path d="M-5,-103 L5,-103" fill="none" ${st(2.2)}/>`
+    }[o.mouth || "smile"];
+
+    if (o.head === "headband") v += `<path d="M-23,-128 Q0,-136 23,-128 L23,-122 Q0,-130 -23,-122Z" fill="${o.band}" ${st(2)}/>`;
+    if (o.head === "veil") v += `<path d="M-26,-110 Q-28,-150 0,-150 Q28,-150 26,-110 Q24,-138 0,-140 Q-24,-138 -26,-110Z" fill="${o.veil}" ${st(2)}/>`;
+    if (o.head === "crown") v += `<path d="M-19,-135 L-19,-153 L-9,-143 L0,-158 L9,-143 L19,-153 L19,-135Z" fill="#f4c430" ${st(2)}/><circle cx="0" cy="-141" r="3" fill="#c1121f"/>`;
+    if (o.head === "nemes") v += `<path d="M-25,-114 Q-27,-150 0,-150 Q27,-150 25,-114 L21,-124 Q0,-136 -21,-124Z" fill="#e9c46a" ${st(2)}/><path d="M-20,-140 Q0,-148 20,-140" fill="none" stroke="#1d4e89" stroke-width="4"/><circle cx="0" cy="-146" r="4" fill="#c1440e" ${st(1.5)}/>`;
+    if (o.head === "turban") v += `<path d="M-25,-120 Q-30,-158 0,-156 Q30,-158 25,-120 Q0,-131 -25,-120Z" fill="${o.turban}" ${st(2)}/><path d="M-22,-133 Q0,-145 22,-133 M-16,-146 Q4,-150 18,-143" fill="none" stroke="#000" stroke-opacity=".2" stroke-width="2"/>`;
+    if (o.head === "helmet") v += `<path d="M-6,-148 Q-2,-174 26,-164 Q22,-152 6,-147Z" fill="#c0392b" ${st(2)}/><path d="M-25,-114 Q-27,-150 0,-150 Q27,-150 25,-114 L22,-124 Q0,-134 -22,-124Z" fill="#a7adb5" ${st(2)}/>`;
+
+    v += o.extra || "";
+    return g(x, y, s, kneel ? `<g transform="translate(0,40)">${v}</g>` : v, flip, o.rot);
+  }
+
+  /* ---- Scenes ---- */
+  const S = {
+    "Joseph": () => scene("#f6deae", "#e2b26e",
+      eCol(28, 28, 28, 134) + eCol(344, 28, 28, 134) +
+      `<path d="M262,165 V72 Q290,48 318,72 V165Z" fill="#fff4cf" ${st()}/>` + palm(300, 150, 0.35) +
+      ground("#c2925a", 168) +
+      `<path d="M74,156 L72,172 M158,156 L160,172" ${st(4)}/><rect x="66" y="134" width="100" height="24" rx="6" fill="#b5483b" ${st()}/><path d="M66,146 Q56,108 84,114 L84,134Z" fill="#b5483b" ${st()}/>` +
+      `<path d="M112,128 Q132,118 152,128 L158,162 Q142,170 130,160 Q118,170 106,160Z" fill="#2a9d8f" ${st()}/>` +
+      `<path d="M188,112 h-22 M188,128 h-30 M188,144 h-18" stroke="${O}" stroke-width="2.5" stroke-linecap="round" opacity=".5"/>` +
+      person(225, 192, 0.9, { robe: "#f4efe3", hairStyle: "short", hair: "#2b1a10", pose: "run", mood: "worried", mouth: "open", look: 2 })),
+
+    "Jeremiah": () => scene("#a7c7e7", "#f1e3c6",
+      `<rect x="-5" y="92" width="410" height="78" fill="#d8b98a" ${st()}/>` +
+      Array.from({ length: 11 }, (_, i) => `<rect x="${i * 40 - 4}" y="78" width="22" height="16" fill="#d8b98a" ${st(2)}/>`).join("") +
+      `<path d="M0,115 H400 M0,138 H400 M40,92 V115 M120,92 V115 M200,92 V115 M280,92 V115 M360,92 V115 M80,115 V138 M160,115 V138 M240,115 V138 M320,115 V138" stroke="#b8976a" stroke-width="2"/>` +
+      cloud(70, 40, 0.8) + cloud(330, 30, 0.6) + ground("#c9a46a", 168) +
+      person(200, 194, 0.95, {
+        robe: "#6a8d3a", belt: "#7a4a1f", hairStyle: "short", hair: "#4a2c17", beard: "short", mood: "worried", mouth: "open",
+        lh: [-50, -90], rh: [50, -90],
+        mid: `<rect x="-24" y="-110" width="7" height="28" rx="2" fill="#6b4220" ${st(2)}/><rect x="17" y="-110" width="7" height="28" rx="2" fill="#6b4220" ${st(2)}/><rect x="-62" y="-96" width="124" height="12" rx="5" fill="#8b5a2b" ${st()}/>`
+      })),
+
+    "Samuel": () => scene("#2e335c", "#7b6fa8",
+      rain(0, 400, 20, 150, 60, "#b8c4ff") + cloud(60, 30, 1.1, "#5d5a86") + cloud(200, 18, 1.2, "#4f4c78") + cloud(340, 34, 1.1, "#5d5a86") +
+      bolt(110, 40, 1) + bolt(300, 46, 0.9) + ground("#d9a93a", 166) +
+      Array.from({ length: 28 }, (_, i) => `<path d="M${i * 15 + 4},180 V164" stroke="#a87a1e" stroke-width="2"/><ellipse cx="${i * 15 + 4}" cy="161" rx="3" ry="6" fill="#e9c46a" ${st(1.2)}/>`).join("") +
+      person(200, 196, 0.95, { robe: "#7b3f61", sleeve: "#a8577f", belt: "#d4a017", hairStyle: "bald", hair: "#dcdcdc", beard: "long", beardC: "#ececec", mouth: "open", pose: "up", lookY: -2, old: true })),
+
+    "Jonah": () => scene("#1d7ea3", "#05324a",
+      rays(200, -60, 14, "#e6fbff", 0.08) +
+      `<path d="M20,205 Q10,160 30,130 Q40,160 30,205Z M60,205 Q70,170 52,150 Q48,180 52,205Z M370,205 Q384,150 360,120 Q356,160 362,205Z" fill="#2f8f5b" ${st(2)}/>` +
+      [[70, 60, 5], [84, 40, 3.5], [64, 26, 2.5], [150, 70, 3]].map(([a, b, r]) => `<circle cx="${a}" cy="${b}" r="${r}" fill="none" stroke="#dff7ff" stroke-width="1.5"/>`).join("") +
+      bigFish(270, 112, 0.92) +
+      person(100, 170, 0.62, { robe: "#c9a46a", hairStyle: "short", hair: "#2b1a10", beard: "short", eyes: "wide", mouth: "shout", mood: "worried", pose: "up", look: 2, rot: -12 })),
+
+    "Noah": () => scene("#9fd8f5", "#eaf7fd",
+      cloud(60, 30, 0.8) + cloud(190, 20, 0.6) + ground("#7cb342", 166) +
+      g(292, 116, 0.86, `<path d="M-90,0 L90,0 L75,40 L-75,40Z" fill="#8b5a2b" ${st()}/><path d="M-88,14 H88 M-82,27 H82" stroke="#6b4220" stroke-width="2"/><rect x="-55" y="-35" width="110" height="35" fill="#a0693a" ${st()}/><path d="M-64,-35 L0,-58 L64,-35Z" fill="#7a4a22" ${st()}/><rect x="-12" y="-28" width="24" height="28" fill="#3a2414" ${st(2)}/><rect x="-44" y="-26" width="14" height="10" fill="#3a2414"/><rect x="30" y="-26" width="14" height="10" fill="#3a2414"/>`) +
+      `<path d="M236,172 L292,120" stroke="${O}" stroke-width="12" stroke-linecap="round"/><path d="M236,172 L292,120" stroke="#a0693a" stroke-width="8" stroke-linecap="round"/>` +
+      elephant(196, 172, 0.5) + elephant(150, 176, 0.46) + sheep(116, 180, 0.62) + sheep(96, 186, 0.56) +
+      person(48, 194, 0.82, {
+        robe: "#a0522d", belt: "#e9c46a", hairStyle: "bald", hair: "#eee", beard: "long", beardC: "#f4f4f4", mood: "happy", mouth: "smile", pose: "holdR", rh: [30, -84], old: true,
+        mid: `<path d="M30,-4 L30,-168 Q30,-182 18,-176" stroke="#7a4a1f" stroke-width="5" fill="none" stroke-linecap="round"/>`
+      })),
+
+    "Paul": () => scene("#cbb68c", "#efe2c4",
+      pillar(30, 20, 26, 110, "#e8dcc0") + pillar(344, 20, 26, 110, "#e8dcc0") +
+      [[90, 110], [120, 104], [300, 108], [330, 112]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="11" fill="#8d7a5c" opacity=".55"/><path d="M${a - 16},${b + 40} Q${a},${b + 4} ${a + 16},${b + 40}Z" fill="#8d7a5c" opacity=".55"/><path d="M${a + 10},${b - 4} l6,-16" stroke="#8d7a5c" stroke-width="5" stroke-linecap="round" opacity=".55"/>`).join("") +
+      `<rect x="-5" y="160" width="410" height="45" fill="#d9c9a5" ${st()}/><path d="M-5,174 H405 M-5,188 H405" stroke="#b5a37e" stroke-width="2"/>` +
+      person(200, 192, 0.9, { robe: "#c9b58f", belt: "#7a4a1f", hairStyle: "bald", hair: "#3a2a1a", beard: "short", beardC: "#3a2a1a", mood: "worried", mouth: "flat", pose: "front", extra: `<path d="M-14,-66 Q0,-54 14,-66" stroke="#6d6d6d" stroke-width="3" fill="none" stroke-dasharray="4 2"/>` }) +
+      [[132, false], [268, true]].map(([px, f]) => person(px, 192, 0.85, {
+        robe: "#b23a2e", belt: "#e9c46a", head: "helmet", skin: "#d9a066", mood: "angry", mouth: "flat", lh: [-24, -50], rh: [52, -84],
+        extra: `<rect x="-50" y="-106" width="30" height="52" rx="8" fill="#a83226" ${st()}/><circle cx="-35" cy="-80" r="6" fill="#e9c46a" ${st(2)}/>`
+      }, f)).join("")),
+
+    "Samson": () => scene("#3d1f12", "#8c4a22",
+      pillar(30, 30, 24, 130, "#7a4a2a", "#5c3418") + pillar(346, 30, 24, 130, "#7a4a2a", "#5c3418") +
+      pillar(98, 22, 34, 146) + pillar(248, 22, 34, 146) +
+      `<path d="M112,40 l8,14 l-6,10 l8,14 M262,60 l-6,12 l8,10 l-4,16 M118,120 l6,10 l-4,8" fill="none" ${st(2)}/>` +
+      [[160, 20, 15], [215, 30, -20], [186, 8, 40], [300, 18, 10]].map(([a, b, r]) => `<rect x="${a}" y="${b}" width="14" height="10" fill="#c9b48a" transform="rotate(${r} ${a} ${b})" ${st(2)}/>`).join("") +
+      ground("#5c3418", 178) +
+      person(190, 196, 1.0, { robe: "#7a5230", sleeve: "#c68b59", skin: "#c68b59", belt: "#3a2414", hairStyle: "curlyLong", hair: "#2a1a10", beard: "short", mood: "angry", mouth: "grin", eyes: "closed", pose: "wide" })),
+
+    "Jonathan": () => scene("#ffd59e", "#fff3dd",
+      hills("#c8d68a", 150) + ground("#9cb25a", 168) +
+      `<path d="M290,100 L338,100" stroke="#5a3a1a" stroke-width="2.5"/><path d="M338,100 l-8,-4 v8z" fill="#5a3a1a"/><path d="M290,100 l-7,-5 M290,100 l-7,5" stroke="#c1440e" stroke-width="2.5"/>` +
+      `<ellipse cx="250" cy="170" rx="26" ry="14" fill="#a8a29a" ${st()}/>` +
+      person(350, 192, 0.5, { robe: "#e9c46a", hairStyle: "short", hair: "#3a2416", pose: "run", mouth: "grin", mood: "happy" }) +
+      person(120, 194, 0.92, {
+        robe: "#3d6e8c", belt: "#e9c46a", head: "headband", band: "#c1440e", hairStyle: "short", hair: "#5a3a1a", beard: "short", mouth: "smile", mood: "neutral", look: 2,
+        lh: [6, -98], rh: [62, -100],
+        under: `<rect x="-36" y="-118" width="11" height="44" rx="3" fill="#7a4a1f" transform="rotate(-18 -30 -96)" ${st(2)}/>`,
+        extra: `<path d="M62,-142 Q90,-100 62,-58" fill="none" stroke="${O}" stroke-width="7" stroke-linecap="round"/><path d="M62,-142 Q90,-100 62,-58" fill="none" stroke="#9c6b3c" stroke-width="4" stroke-linecap="round"/><path d="M62,-142 L6,-98 L62,-58" fill="none" stroke="#f4efe3" stroke-width="1.4"/><path d="M6,-98 H96" stroke="#5a3a1a" stroke-width="2.5"/><path d="M96,-98 l-8,-4 v8z" fill="#5a3a1a"/>`
+      })),
+
+    "Mary": () => scene("#162447", "#2e3f6e",
+      stars(26, 60) + `<circle cx="352" cy="32" r="14" fill="#fdf3c4"/><circle cx="358" cy="28" r="12" fill="#21305a"/>` +
+      `<rect x="30" y="66" width="340" height="110" fill="#3a2a1a"/>` +
+      `<rect x="34" y="62" width="10" height="114" fill="#6b4220" ${st(2)}/><rect x="356" y="62" width="10" height="114" fill="#6b4220" ${st(2)}/>` +
+      `<path d="M16,74 L200,34 L384,74 L372,84 L200,46 L28,84Z" fill="#7a4a22" ${st()}/>` +
+      ground("#c9a25a", 172) + Array.from({ length: 16 }, (_, i) => `<path d="M${i * 26 + 6},182 l10,-6" stroke="#a8823e" stroke-width="2"/>`).join("") +
+      donkey(328, 140, 0.8, true) + manger(250, 168, 0.95) +
+      person(150, 194, 0.88, { kneel: true, head: "veil", veil: "#3f6fb0", robe: "#e8e1d0", skin: "#d79c6c", mood: "happy", mouth: "smile", pose: "front", look: 2, lookY: 2 })),
+
+    "Hezekiah": () => scene("#ecc98f", "#c78b45",
+      rays(220, -40, 10, "#fff6d8", 0.18) + pillar(26, 24, 28, 140) + pillar(346, 24, 28, 140) +
+      `<rect x="90" y="120" width="220" height="12" fill="#d9b27a" ${st(2)}/><rect x="104" y="108" width="192" height="12" fill="#e3bf88" ${st(2)}/>` +
+      ground("#b07a3e", 172) + scrollFlat(232, 176, 72) +
+      person(166, 194, 0.92, { kneel: true, head: "crown", hairStyle: "short", hair: "#3a2416", beard: "short", robe: "#6b2f8a", sleeve: "#7d3ba0", mood: "worried", eyes: "closed", mouth: "flat", pose: "pray" })),
+
+    "Job": () => scene("#f6b77c", "#cad8ea",
+      `<path d="M40,150 L40,118 L60,104 L80,118 L80,150Z" fill="#8c7a66" opacity=".6"/><path d="M60,104 L66,128" stroke="#5a4a3a" stroke-width="2" opacity=".6"/>` +
+      ground("#b9a07a", 176) + `<path d="M70,205 Q200,138 330,205Z" fill="#9a9a96" ${st()}/>` +
+      `<path d="M262,186 l10,-8 l8,6 l-6,8Z M286,190 l8,-4 l4,6 l-8,2Z" fill="#b5653a" ${st(1.5)}/>` +
+      cloud(200, 26, 0.45, "#8e8e9a") + rain(178, 222, 36, 54, 6, "#6b7cff") +
+      person(196, 190, 0.95, {
+        kneel: true, hairStyle: "bald", hair: "#ccc", beard: "long", beardC: "#e2e2e2", robe: "#9e8c74", mood: "worried", mouth: "frown", lookY: 2, old: true,
+        lh: [-20, -60], rh: [34, -64],
+        extra: `<path d="M30,-72 L46,-76 L43,-60 L32,-58Z" fill="#b5653a" ${st(2)}/><path d="M-8,-70 l10,-4 l-2,10Z M10,-56 l8,2 l-4,6Z" fill="#7d6c56"/>`
+      })),
+
+    "Timothy": () => scene("#bfe3f2", "#fdf2dc",
+      cloud(320, 30, 0.6) + `<rect x="-5" y="70" width="80" height="100" fill="#e3c08f" ${st()}/><rect x="-9" y="62" width="88" height="10" fill="#a0693a" ${st(2)}/><rect x="22" y="118" width="26" height="52" fill="#5a3a1a" ${st(2)}/>` +
+      tree(360, 170, 1) + ground("#a8c66c", 172) +
+      person(118, 194, 0.84, { head: "veil", veil: "#2a9d8f", robe: "#6d597a", old: true, mood: "happy", mouth: "smile", pose: "front", look: 2, lookY: 2 }) +
+      person(196, 194, 0.6, {
+        robe: "#f1e3c0", hairStyle: "curly", hair: "#3a2416", mood: "happy", mouth: "grin", lh: [-20, -70], rh: [20, -70], lookY: 3,
+        extra: `<rect x="-22" y="-82" width="44" height="22" fill="#f3e6c4" ${st(2)}/><rect x="-27" y="-85" width="8" height="28" rx="3" fill="#a0693a" ${st(2)}/><rect x="19" y="-85" width="8" height="28" rx="3" fill="#a0693a" ${st(2)}/><path d="M-14,-76 H14 M-14,-70 H10 M-14,-64 H12" stroke="#9c8a63" stroke-width="1.5"/>`
+      }) +
+      person(278, 194, 0.86, { head: "veil", veil: "#e76f51", robe: "#f4a261", skin: "#d79c6c", mood: "happy", mouth: "smile", pose: "pointR", rh: [50, -74], look: 2, lookY: 2 }, true)),
+
+    "Isaiah": () => scene("#fff3c4", "#f4a940",
+      rays(320, -10, 16, "#ffffff", 0.3) + cloud(80, 40, 0.8) + cloud(250, 60, 0.5) +
+      hills("#e2b56a", 160) + ground("#d8a85a", 174) +
+      person(196, 196, 0.95, { head: "turban", turban: "#efe6cf", robe: "#2f5d8a", belt: "#e9c46a", beard: "short", hair: "#5a3a1a", mood: "happy", mouth: "grin", pose: "upR", look: 1, lookY: -2 })),
+
+    "Peter": () => scene("#1e3a64", "#5b86b5",
+      cloud(60, 26, 1, "#3a5277") + cloud(250, 18, 1.1, "#334a6e") + rain(0, 400, 10, 120, 50, "#a9c4e8") +
+      g(80, 118, 0.8, `<path d="M-60,0 L60,0 L45,22 L-45,22Z" fill="#8b5a2b" ${st()}/><path d="M0,0 V-70" stroke="${O}" stroke-width="4"/><path d="M3,-66 Q40,-40 4,-8Z" fill="#efe6d0" ${st(2)}/>`) +
+      waves(132, "#2c5d8a", 7) +
+      person(232, 222, 0.95, { robe: "#d9cbb0", hairStyle: "curly", hair: "#1f140c", beard: "short", eyes: "wide", mouth: "shout", mood: "worried", pose: "reach", lookY: -2 }) +
+      waves(160, "#3a75a8", 9, 50) +
+      [[196, 148], [270, 146], [208, 136], [258, 134]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="3" fill="#e6f4ff" ${st(1.2)}/>`).join("")),
+
+    "Pharaoh": () => scene("#f8d48f", "#eba552",
+      `<circle cx="330" cy="40" r="22" fill="#ffe08a" ${st(2)}/>` + pyramid(80, 168, 150, 90) + pyramid(330, 168, 110, 64, "#d9a654") +
+      ground("#e6bf7a", 168) + frog(86, 182, 0.95) + frog(312, 186, 1) + frog(352, 166, 0.7) + frog(48, 166, 0.6) +
+      person(200, 194, 0.95, {
+        head: "nemes", robe: "#f4efe3", collar: true, beard: "pharaoh", skin: "#b5764a", mood: "angry", mouth: "frown", lh: [-24, -50], rh: [40, -140],
+        extra: frog(0, -152, 0.55)
+      })),
+
+    "Aaron": () => scene("#d3ecd0", "#f7f2df",
+      `<path d="M20,168 L20,96 L140,96 L140,168Z" fill="#e8ddc4" ${st()}/><path d="M10,100 L80,70 L150,100Z" fill="#7a5c3a" ${st()}/><rect x="70" y="122" width="22" height="46" fill="#6b2f8a" ${st(2)}/>` +
+      `<path d="M330,168 L360,120 L390,168Z" fill="#cbb48a" ${st(2)}/>` + ground("#c2b280", 170) +
+      person(222, 194, 0.95, {
+        head: "turban", turban: "#f7f3e8", robe: "#2f4f9c", belt: "#c1440e", beard: "long", beardC: "#dadada", mood: "happy", mouth: "grin", eyes: "wide", pose: "holdR", rh: [36, -92], old: true,
+        mid: `<path d="M36,-6 L36,-184" stroke="#7a4a1f" stroke-width="5" stroke-linecap="round"/><ellipse cx="44" cy="-150" rx="8" ry="4" fill="#6aab55" transform="rotate(-30 44 -150)"/><ellipse cx="28" cy="-130" rx="8" ry="4" fill="#6aab55" transform="rotate(30 28 -130)"/><ellipse cx="46" cy="-118" rx="4" ry="6" fill="#a0693a" ${st(1)}/>` +
+          flower(36, -186) + flower(26, -166, 3.5) + flower(46, -160, 3.5) + flower(30, -142, 3),
+        extra: Array.from({ length: 12 }, (_, i) => `<rect x="${-9 + (i % 3) * 6}" y="${-84 + Math.floor(i / 3) * 6}" width="5" height="5" fill="${["#e63946", "#2a9d8f", "#f4c430", "#8338ec"][i % 4]}" stroke="${O}" stroke-width=".8"/>`).join("")
+      })),
+
+    "Miriam": () => scene("#8fd3f0", "#e7f5fb",
+      cloud(70, 30, 0.7) + waves(118, "#3a86c8", 6, 36) +
+      `<rect x="-5" y="152" width="410" height="60" fill="#efd29a" ${st()}/>` +
+      person(320, 174, 0.45, { head: "veil", veil: "#2a9d8f", robe: "#e9c46a", pose: "up", mouth: "grin", mood: "happy" }) +
+      person(80, 176, 0.45, { head: "veil", veil: "#8338ec", robe: "#f4a261", pose: "up", mouth: "grin", mood: "happy" }) +
+      `<path d="M262,60 v-18 l12,-4 v18" fill="none" ${st(2.5)}/><circle cx="259" cy="60" r="4" fill="${O}"/><circle cx="271" cy="56" r="4" fill="${O}"/><path d="M136,48 v-18" ${st(2.5)}/><circle cx="133" cy="48" r="4" fill="${O}"/>` +
+      person(200, 196, 0.95, {
+        head: "veil", veil: "#c0392b", robe: "#f2c14e", old: true, mood: "happy", mouth: "grin", lh: [-40, -140], rh: [36, -156],
+        extra: `<circle cx="46" cy="-164" r="16" fill="#e9c46a" ${st(2)}/><circle cx="46" cy="-164" r="10" fill="#f7e7b4"/>` + [0, 90, 180, 270].map(a => `<circle cx="${n(46 + 16 * Math.cos(a * Math.PI / 180))}" cy="${n(-164 + 16 * Math.sin(a * Math.PI / 180))}" r="3" fill="#c0c0c0" ${st(1)}/>`).join("")
+      })),
+
+    "Jacob": () => scene("#101a38", "#2b3d6b",
+      stars(30, 90) + `<circle cx="60" cy="34" r="13" fill="#fdf3c4"/><circle cx="66" cy="30" r="11" fill="#14204a"/>` +
+      `<path d="M-5,150 Q200,138 405,152 V162 Q200,150 -5,160Z" fill="#3c6ea8"/>` + ground("#3e4f34", 170) +
+      `<circle cx="250" cy="112" r="72" fill="#fff4c2" opacity=".18"/><circle cx="250" cy="112" r="48" fill="#fff4c2" opacity=".18"/>` +
+      person(170, 196, 0.95, { robe: "#8a5a2b", belt: "#3a2414", hairStyle: "short", hair: "#2a1a10", beard: "short", mood: "angry", mouth: "grin", lh: [42, -112], rh: [48, -80], look: 2 }) +
+      person(250, 196, 0.95, { robe: "#f6f2e6", sleeve: "#f6f2e6", skin: "#e8c39a", hairStyle: "short", hair: "#e9c46a", mood: "neutral", mouth: "flat", lh: [44, -80], rh: [38, -112], look: 2 }, true)),
+
+    "Potiphar": () => scene("#f3dca6", "#d8a55a",
+      `<rect x="140" y="30" width="120" height="90" fill="#9fd3ef" ${st()}/>` + pyramid(200, 120, 90, 50) +
+      eCol(40, 26, 28, 138) + eCol(332, 26, 28, 138) + ground("#c08f50", 170) +
+      person(200, 194, 0.95, {
+        robe: "#f7f3ea", collar: true, skin: "#a8693f", mood: "happy", mouth: "smile", look: -2, lh: [-30, -80], rh: [34, -74],
+        mid: `<path d="M-30,-6 L-30,-150" stroke="#1d4e89" stroke-width="5" stroke-linecap="round"/><circle cx="-30" cy="-154" r="6" fill="#e9c46a" ${st(2)}/>`,
+        extra: `<path d="M26,-68 Q20,-50 30,-44 L48,-44 Q58,-50 52,-68 L46,-74 L32,-74Z" fill="#d4a017" ${st(2)}/><path d="M32,-74 Q39,-80 46,-74" fill="none" ${st(2)}/><circle cx="58" cy="-40" r="4" fill="#f4c430" ${st(1.2)}/>`
+      })),
+
+    "Reuben": () => scene("#ffd28e", "#fbecc8",
+      `<circle cx="320" cy="44" r="20" fill="#ffe9a8"/>` + hills("#ebc58a", 150) +
+      camel(300, 146, 0.6) + camel(328, 146, 0.6) + camel(356, 146, 0.6) + ground("#e3b778", 162) +
+      `<ellipse cx="112" cy="178" rx="52" ry="16" fill="#2a1a10" ${st()}/>` +
+      [[64, 176], [80, 166], [104, 162], [130, 163], [152, 168], [162, 180], [150, 192], [74, 190]].map(([a, b]) => `<ellipse cx="${a}" cy="${b}" rx="9" ry="6" fill="#a8a29a" ${st(1.5)}/>`).join("") +
+      `<path d="M108,186 L104,170" stroke="${O}" stroke-width="9" stroke-linecap="round"/><path d="M108,186 L104,170" stroke="#d9a066" stroke-width="5" stroke-linecap="round"/><circle cx="104" cy="168" r="5" fill="#d9a066" ${st(1.5)}/>` +
+      person(208, 196, 0.95, { robe: "#556b2f", belt: "#b5651d", head: "turban", turban: "#c97c3a", beard: "short", hair: "#4a2c17", mood: "worried", mouth: "open", lh: [-60, -64], rh: [-44, -56], look: -2, lookY: 2 })),
+
+    "Lot": () => scene("#5c1414", "#f28c28",
+      [[10, 150, 40, 50], [48, 150, 34, 70], [86, 150, 44, 40]].map(([a, b, w, h]) => `<rect x="${a}" y="${b - h}" width="${w}" height="${h}" fill="#3a1208" ${st(2)}/>`).join("") +
+      flame(30, 100, 0.8) + flame(64, 80, 1) + flame(104, 110, 0.7) +
+      [[150, 20], [200, 50], [260, 14], [320, 40], [370, 16], [120, 60]].map(([a, b]) => flame(a, b, 0.35)).join("") +
+      ground("#6b2e14", 176) +
+      person(150, 194, 0.72, { head: "veil", veil: "#f4f4f2", robe: "#ececea", sleeve: "#ececea", skin: "#f8f8f6", mood: "worried", mouth: "open", look: -2 }) +
+      person(236, 194, 0.88, { head: "turban", turban: "#3d6a6a", robe: "#8a6a45", belt: "#e9c46a", beard: "long", beardC: "#d2d2d2", mood: "worried", mouth: "open", pose: "run", look: 2, old: true }) +
+      person(304, 194, 0.7, { head: "veil", veil: "#e9c46a", robe: "#7b3f61", pose: "run", mood: "worried", mouth: "open", look: 2 }) +
+      person(360, 194, 0.7, { head: "veil", veil: "#5fa8d3", robe: "#2a9d8f", pose: "run", mood: "worried", mouth: "small", look: 2 })),
+
+    "Esau": () => scene("#ffd09a", "#fff1db",
+      `<path d="M30,166 L80,106 L130,166Z" fill="#a8763e" ${st()}/><path d="M80,106 L92,166 L68,166Z" fill="#3a2414"/>` +
+      `<path d="M330,166 Q326,140 340,120" fill="none" stroke="#5e9c4a" stroke-width="4"/>` + ground("#b9c46a", 168) +
+      person(214, 196, 0.95, {
+        robe: "#7a4a24", sleeve: "#d79c6c", skin: "#d79c6c", hairStyle: "curly", hair: "#c0501e", beard: "short", beardC: "#c0501e", mood: "happy", mouth: "grin", lookY: 3, lh: [-16, -66], rh: [16, -66],
+        under: `<path d="M-30,-150 Q-62,-100 -34,-30" fill="none" stroke="${O}" stroke-width="7" stroke-linecap="round"/><path d="M-30,-150 Q-62,-100 -34,-30" fill="none" stroke="#9c6b3c" stroke-width="4" stroke-linecap="round"/>`,
+        mid: [[-16, -40], [10, -30], [-4, -70], [18, -56]].map(([a, b]) => `<ellipse cx="${a}" cy="${b}" rx="5" ry="3.5" fill="#4a2c14"/>`).join(""),
+        extra: `<path d="M-22,-66 Q0,-42 22,-66Z" fill="#8b5a2b" ${st(2)}/><ellipse cx="0" cy="-66" rx="22" ry="6" fill="#b23a1e" ${st(2)}/><path d="M-8,-76 q-5,-8 0,-14 q5,-6 0,-12 M6,-76 q-5,-8 0,-14 q5,-6 0,-12" fill="none" stroke="#fff" stroke-width="2" opacity=".8"/>`
+      })),
+
+    "King Saul": () => scene("#a9c9e6", "#eef5fb",
+      cloud(60, 34, 0.7) + cloud(340, 24, 0.6) + hills("#a9cf86", 150) + ground("#7aa95a", 172) +
+      person(108, 196, 0.72, { robe: "#5a7d9a", hairStyle: "short", hair: "#5a3a1a", beard: "short", lookY: -3, look: 2, mouth: "open", eyes: "wide" }) +
+      person(292, 196, 0.72, { head: "veil", veil: "#e9c46a", robe: "#a35d6a", lookY: -3, look: -2, mouth: "open", eyes: "wide" }) +
+      person(200, 198, 1.12, { head: "crown", hairStyle: "short", hair: "#2a1a10", beard: "short", robe: "#7d1f3a", belt: "#e9c46a", mood: "happy", mouth: "smile", under: `<path d="M-20,-96 L-42,-4 L42,-4 L20,-96Z" fill="#4a1022" ${st()}/>` })),
+
+    "Hannah": () => scene("#ead9b5", "#c9a46e",
+      `<rect x="-5" y="20" width="410" height="150" fill="#8e3b46"/>` + Array.from({ length: 10 }, (_, i) => `<path d="M${i * 42 + 10},20 Q${i * 42 + 22},90 ${i * 42 + 10},170" fill="none" stroke="#6e2a33" stroke-width="3"/>`).join("") +
+      `<rect x="-5" y="14" width="410" height="10" fill="#d4a017" ${st(2)}/>` + ground("#a87a48", 172) +
+      `<rect x="268" y="148" width="66" height="10" fill="#7a4a22" ${st(2)}/><path d="M274,158 V180 M328,158 V180" ${st(4)}/>` +
+      person(302, 172, 0.82, { kneel: true, head: "turban", turban: "#f4f1e8", beard: "long", beardC: "#e5e5e5", robe: "#4b6584", mood: "raised", mouth: "flat", look: 2, old: true }, true) +
+      person(134, 194, 0.9, {
+        kneel: true, head: "veil", veil: "#b8577a", robe: "#f1e3c0", skin: "#d79c6c", mood: "worried", eyes: "closed", mouth: "small", pose: "pray",
+        extra: `<path d="M12,-106 q5,-2 7,2 M12,-100 q6,0 7,4" fill="none" ${st(1.5)}/>`
+      })),
+
+    "Manoah": () => scene("#ffae42", "#fff1d0",
+      rays(260, 110, 14, "#fff7dc", 0.3) + ground("#c49a5a", 174) +
+      `<circle cx="260" cy="92" r="40" fill="#fffbe8" opacity=".55"/>` +
+      `<rect x="222" y="148" width="76" height="28" fill="#a8a29a" ${st()}/><path d="M222,162 H298 M246,148 V162 M272,162 V176" stroke="#7e7870" stroke-width="2"/>` +
+      flame(260, 150, 1.8) +
+      person(260, 116, 0.42, { robe: "#fffbe8", sleeve: "#fffbe8", skin: "#fff1d6", hairStyle: "short", hair: "#fff2b0", pose: "up", mouth: "smile" }) +
+      person(84, 194, 0.86, { kneel: true, head: "turban", turban: "#4a7c59", robe: "#9c6b3c", beard: "short", hair: "#4a2c17", eyes: "wide", mouth: "open", mood: "worried", lookY: -3, look: 2, lh: [-34, -116], rh: [36, -116] }) +
+      person(152, 194, 0.8, { kneel: true, head: "veil", veil: "#d4a017", robe: "#8e5572", eyes: "wide", mouth: "open", lookY: -3, look: 2, pose: "pray" })),
+
+    "Gideon": () => scene("#ffcf99", "#cfe8f5",
+      `<path d="M300,160 A40,40 0 0 1 380,160Z" fill="#ffd166" ${st(2)}/>` + hills("#c4a77a", 162) + ground("#a07a4a", 168) +
+      `<ellipse cx="236" cy="184" rx="96" ry="14" fill="#b9935e"/>` +
+      g(236, 182, 1.1, `<path d="M-40,0 Q-46,-14 -30,-16 Q-26,-26 -10,-22 Q0,-30 12,-22 Q26,-28 32,-16 Q46,-14 40,0 Q30,8 0,6 Q-30,8 -40,0Z" fill="#fbf8ee" ${st()}/>` +
+        [[-30, -24], [-6, -32], [18, -30], [36, -22], [-20, 10], [24, 10]].map(([a, b]) => `<path d="M${a},${b} q-3,5 0,7 q3,-2 0,-7Z" fill="#6ec1ea" ${st(1)}/>`).join("")) +
+      `<path d="M300,176 Q318,196 336,176Z" fill="#8b5a2b" ${st(2)}/><ellipse cx="318" cy="176" rx="18" ry="5" fill="#6ec1ea" ${st(2)}/>` +
+      person(136, 194, 0.9, { kneel: true, head: "headband", band: "#2a9d8f", hairStyle: "short", hair: "#3a2416", beard: "short", robe: "#b56b45", eyes: "wide", mouth: "grin", mood: "happy", look: 2, lookY: 2, pose: "pointR" })),
+
+    "Naomi": () => scene("#f9c784", "#fdeacb",
+      `<circle cx="80" cy="60" r="24" fill="#ffe29a"/>` + hills("#e0ad6e", 140) +
+      `<path d="M260,140 Q320,80 405,96 V140Z" fill="#c9965a" ${st(2)}/>` + house(300, 112, 22, 18) + house(326, 104, 26, 22) + house(356, 102, 22, 20) +
+      ground("#c9b36a", 166) + `<path d="M-5,205 Q120,180 200,172 Q280,164 320,140 L340,142 Q300,176 220,186 Q160,196 120,205Z" fill="#ead6aa"/>` +
+      person(146, 196, 0.85, {
+        head: "veil", veil: "#6d597a", robe: "#8d7966", old: true, mood: "happy", mouth: "smile", lh: [-30, -70], rh: [32, -60], look: 2,
+        mid: `<path d="M-30,-4 L-30,-120" stroke="#7a4a1f" stroke-width="5" stroke-linecap="round"/>`
+      }) +
+      person(206, 196, 0.85, { head: "veil", veil: "#e07a5f", robe: "#3d5a80", skin: "#d79c6c", mood: "happy", mouth: "grin", lh: [-36, -60], rh: [24, -50], look: -1, under: `<circle cx="-22" cy="-74" r="17" fill="#c9b07a" ${st()}/>` })),
+
+    "Rahab": () => scene("#8ecae6", "#e9f7fc",
+      cloud(330, 30, 0.6) + `<path d="M-5,150 L-5,110 L30,110 L30,96 L60,96 L60,120 L100,120 L100,150Z" fill="#c8b28a" opacity=".7"/>` +
+      Array.from({ length: 6 }, (_, i) => `<g transform="translate(${236 + i * 24},0)"><path d="M-10,172 L-6,98 M-3,172 L-1,94 M4,172 L4,96 M10,172 L8,100" stroke="#a7b56a" stroke-width="3"/><path d="M-10,140 H10" stroke="#7a4a1f" stroke-width="4"/></g>`).join("") +
+      person(268, 216, 0.7, { head: "turban", turban: "#5a7d9a", beard: "short", hair: "#2a1a10", eyes: "wide", mouth: "flat", look: -2 }) +
+      person(320, 222, 0.7, { head: "turban", turban: "#b5651d", beard: "short", hair: "#2a1a10", eyes: "wide", mouth: "small", look: -2 }) +
+      Array.from({ length: 4 }, (_, i) => `<g transform="translate(${248 + i * 36},0)"><path d="M-12,176 L-8,140 M-4,176 L-2,136 M4,176 L4,138 M12,176 L10,142" stroke="#c2cf7c" stroke-width="3.5"/><path d="M-12,160 H12" stroke="#7a4a1f" stroke-width="4"/></g>`).join("") +
+      person(140, 192, 0.92, { hairStyle: "curlyLong", hair: "#2a1a10", robe: "#d1495b", belt: "#e9c46a", skin: "#d79c6c", eyes: "wink", mouth: "smile", mood: "happy", lh: [-24, -50], rh: [10, -102] }) +
+      `<rect x="-5" y="170" width="410" height="35" fill="#d8b98a" ${st()}/><path d="M60,182 H140 M200,192 H280" stroke="#b8976a" stroke-width="2"/>` +
+      `<path d="M42,170 Q36,186 44,205" fill="none" stroke="#c1121f" stroke-width="5" stroke-linecap="round"/><circle cx="42" cy="170" r="5" fill="#c1121f" ${st(1.5)}/>`),
+
+    "Korah": () => scene("#3b2c4f", "#9d6bb8",
+      cloud(80, 30, 1, "#4b3a63") + cloud(300, 24, 1.1, "#4b3a63") + ground("#8a6a45", 168) +
+      `<path d="M120,172 L170,176 L182,168 L214,180 L238,170 L276,178 L310,170 L300,186 L268,190 L246,200 L212,192 L188,204 L160,190 L130,186Z" fill="#2a0f0f" ${st()}/>` +
+      `<path d="M150,184 L184,192 L214,186 L246,194 L280,184" fill="none" stroke="#f77f00" stroke-width="3"/>` +
+      `<path d="M120,150 l6,-10 l6,8 M296,154 l6,-8 l4,8" fill="none" ${st(2)}/>` +
+      person(200, 184, 0.9, {
+        head: "turban", turban: "#7a5c3a", robe: "#b08d57", belt: "#5a3a1a", beard: "long", beardC: "#9a9a9a", mood: "angry", mouth: "shout", pose: "pointR", lh: [-42, -78], rot: 6,
+        extra: `<path d="M-42,-78 L-50,-58 M-42,-78 L-34,-58" stroke="#8a7a5a" stroke-width="1.5"/><path d="M-54,-58 Q-42,-42 -30,-58Z" fill="#b08d2c" ${st(2)}/><path d="M-44,-64 q-8,-12 0,-22 q8,-10 -2,-22" fill="none" stroke="#e6e0f0" stroke-width="3" opacity=".7"/>`
+      })),
+
+    "Zipporah": () => scene("#ffe2a8", "#fdf5e3",
+      palm(350, 168, 0.9) + ground("#e6c48a", 168) +
+      `<rect x="48" y="146" width="84" height="32" fill="#b8a98e" ${st()}/><ellipse cx="90" cy="146" rx="42" ry="9" fill="#2a3a4a" ${st()}/><path d="M56,146 V100 M124,146 V100 M50,100 H130" ${st(4)}/><path d="M90,100 V128" stroke="#7a4a1f" stroke-width="2"/><path d="M82,128 h16 l-2,12 h-12Z" fill="#8b5a2b" ${st(1.5)}/>` +
+      sheep(284, 182, 0.8) + sheep(330, 186, 0.75, true) + sheep(250, 192, 0.6) +
+      person(184, 194, 0.9, {
+        head: "veil", veil: "#3a86ff", robe: "#e76f51", belt: "#f4d35e", mood: "happy", mouth: "smile", lh: [-24, -50], rh: [30, -128],
+        extra: `<path d="M18,-146 Q14,-168 28,-172 L26,-180 L40,-180 L38,-172 Q52,-168 48,-146 Q44,-132 33,-132 Q22,-132 18,-146Z" fill="#c4683a" ${st(2)}/>`
+      }))
+  };
+
+  return name => (S[name] ? S[name]() : "");
+})();
+
+const CHARACTERS = [
+  { character: "Joseph",    clue: "Fled when his master’s wife tried to tempt him",            distractors: ["Potiphar", "Reuben"] },
+  { character: "Jeremiah",  clue: "Wore wooden yoke bars as a warning to the nations",          distractors: ["Isaiah", "Hezekiah"] },
+  { character: "Samuel",    clue: "Called on Jehovah, who sent thunder and rain at harvest",    distractors: ["Isaiah", "Aaron"] },
+  { character: "Jonah",     clue: "Ran from his assignment and ended up inside a great fish",   distractors: ["Peter", "Jeremiah"] },
+  { character: "Noah",      clue: "Brought the animals into the ark",                           distractors: ["Lot", "Job"] },
+  { character: "Paul",      clue: "Carried off by soldiers to escape an angry mob",             distractors: ["Peter", "Timothy"] },
+  { character: "Samson",    clue: "Pushed apart the pillars of a temple",                       distractors: ["Gideon", "Manoah"] },
+  { character: "Jonathan",  clue: "A king’s son and a loyal friend to the future king",         distractors: ["Reuben", "Gideon"] },
+  { character: "Mary",      clue: "Laid her firstborn son in a manger",                         distractors: ["Hannah", "Naomi"] },
+  { character: "Hezekiah",  clue: "King who prayed when the Assyrians threatened Jerusalem",     distractors: ["Isaiah", "King Saul"] },
+  { character: "Job",       clue: "Lost everything, yet kept his integrity",                    distractors: ["Noah", "Jacob"] },
+  { character: "Timothy",   clue: "Taught the Scriptures from infancy by his mother and grandmother", distractors: ["Paul", "Samuel"] },
+  { character: "Isaiah",    clue: "Prophet who answered, “Here I am! Send me!”",                distractors: ["Jeremiah", "Samuel"] },
+  { character: "Peter",     clue: "Began to sink while walking on the water",                   distractors: ["Paul", "Jonah"] },
+  { character: "Pharaoh",   clue: "Refused to let the Israelites go, even after the plagues",   distractors: ["Potiphar", "Korah"] },
+  { character: "Aaron",     clue: "His rod budded, blossomed and grew almonds overnight",       distractors: ["Korah", "Gideon"] },
+  { character: "Miriam",    clue: "Led the women in song after the Red Sea crossing",           distractors: ["Zipporah", "Hannah"] },
+  { character: "Jacob",     clue: "Wrestled with an angel to receive a blessing",               distractors: ["Esau", "Reuben"] },
+  { character: "Potiphar",  clue: "Egyptian court officer who bought a young Hebrew slave",     distractors: ["Pharaoh", "Joseph"] },
+  { character: "Reuben",    clue: "Firstborn son who tried to rescue his brother from a pit",   distractors: ["Joseph", "Esau"] },
+  { character: "Lot",       clue: "Fled Sodom, but his wife looked back",                       distractors: ["Noah", "Jacob"] },
+  { character: "Esau",      clue: "Traded his birthright for a bowl of stew",                   distractors: ["Jacob", "Reuben"] },
+  { character: "King Saul", clue: "Israel’s first king, head and shoulders above the rest",     distractors: ["Jonathan", "Hezekiah"] },
+  { character: "Hannah",    clue: "Prayed so earnestly the priest thought she was drunk",       distractors: ["Naomi", "Mary"] },
+  { character: "Manoah",    clue: "Asked the angel his name, then watched him rise in the flame", distractors: ["Samson", "Gideon"] },
+  { character: "Gideon",    clue: "Tested God with a woollen fleece",                           distractors: ["Samson", "King Saul"] },
+  { character: "Naomi",     clue: "Came home to Bethlehem with her loyal daughter-in-law",      distractors: ["Rahab", "Hannah"] },
+  { character: "Rahab",     clue: "Hid two spies under stalks of flax on her roof",             distractors: ["Miriam", "Zipporah"] },
+  { character: "Korah",     clue: "Rebelled against Moses, and the ground opened up",           distractors: ["Aaron", "Potiphar"] },
+  { character: "Zipporah",  clue: "Daughter of a Midianite priest who married Moses",           distractors: ["Miriam", "Rahab"] }
+];
+
+const ROUND = 10;
+
+/* ---------- Sound (Web Audio, unlocked on first tap) ---------- */
+let actx = null;
+function audio() {
+  if (!actx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    actx = new AC();
+  }
+  if (actx.state === "suspended") actx.resume();
+  return actx;
+}
+function tone(freq, start, dur, type, vol) {
+  const ctx = audio();
+  if (!ctx) return;
+  const t = ctx.currentTime + start;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.05);
+}
+function chime() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.09, 0.4, "triangle", 0.25)); }
+function buzzer() { tone(110, 0, 0.45, "sawtooth", 0.16); tone(116.5, 0, 0.45, "sawtooth", 0.1); }
+function fanfare() { [523.25, 659.25, 783.99, 659.25, 1046.5].forEach((f, i) => tone(f, i * 0.13, 0.45, "triangle", 0.22)); }
+document.addEventListener("pointerdown", audio, { once: true });
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+function shuffle(list) {
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function remember(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
+function recall(key) { try { return localStorage.getItem(key) || ""; } catch (e) { return ""; } }
+
+/* ---------- Game state ---------- */
+let player = "", deck = [], idx = 0, score = 0, results = [];
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => { s.hidden = s.id !== id; });
+  const playing = id === "play";
+  $("playerTag").hidden = id === "start";
+  $("progress").hidden = !playing;
+  $("scoreTag").hidden = !playing;
+  window.scrollTo({ top: 0 });
+}
+
+function newGame() {
+  deck = shuffle(CHARACTERS).slice(0, Math.min(ROUND, CHARACTERS.length));
+  idx = 0; score = 0; results = [];
+  $("playerName").textContent = player;
+  $("score").textContent = "0";
+  showScreen("play");
+  showCard();
+}
+
+function drawDots() {
+  const dots = $("dots");
+  dots.replaceChildren(...deck.map((_, i) => {
+    const r = results[i];
+    return el("span", "dot" + (r ? (r.right ? " ok" : " bad") : i === idx ? " now" : ""));
+  }));
+}
+
+function showCard() {
+  $("progress").innerHTML = `Card <b>${idx + 1}</b> of ${deck.length}`;
+  drawDots();
+  const card = makeCard(deck[idx]);
+  $("stage").replaceChildren(card);
+  card.querySelector(".front").focus({ preventScroll: true });
+}
+
+function makeCard(data) {
+  const card = el("article", "card");
+  const inner = el("div", "inner");
+
+  // Front: picture and clue
+  const front = el("div", "face front");
+  front.setAttribute("role", "button");
+  front.tabIndex = 0;
+  front.setAttribute("aria-label", `Clue: ${data.clue}. Tap to choose who this is.`);
+  const art = el("div", "art");
+  art.innerHTML = ART(data.character);
+  if (data.image) {
+    const img = el("img");
+    img.alt = "";
+    img.decoding = "async";
+    img.addEventListener("error", () => img.remove());
+    img.src = data.image;
+    art.appendChild(img);
+  }
+  const tag = el("span", "tag", "Tap to answer");
+  front.append(art, tag, el("div", "clue", data.clue));
+
+  // Back: question and choices
+  const back = el("div", "face back");
+  back.setAttribute("aria-hidden", "true");
+  const top = el("div", "back-top");
+  const flipBack = el("button", "btn", "↩ See picture");
+  flipBack.type = "button";
+  const status = el("span", "status", "One go only!");
+  status.setAttribute("aria-live", "polite");
+  top.append(flipBack, status);
+  const choices = el("div", "choices");
+  const last = idx === deck.length - 1;
+  const next = el("button", "btn primary next", last ? "See my score" : "Next card →");
+  next.type = "button";
+  next.hidden = true;
+  back.append(top, el("p", "question", "Who is this?"), el("p", "back-clue", data.clue), choices, next);
+
+  let answered = false;
+  const buttons = shuffle([data.character, ...data.distractors]).map(name => {
+    const b = el("button", "choice", name);
+    b.type = "button";
+    b.addEventListener("click", () => answer(b, name));
+    choices.appendChild(b);
+    return b;
+  });
+  const rightBtn = buttons.find(b => b.textContent === data.character);
+
+  function setFlipped(on) {
+    card.classList.toggle("flipped", on);
+    back.setAttribute("aria-hidden", String(!on));
+    front.setAttribute("aria-hidden", String(on));
+    buttons.concat(flipBack, next).forEach(b => { b.tabIndex = on ? 0 : -1; });
+    front.tabIndex = on ? -1 : 0;
+    (on ? (answered ? next : flipBack) : front).focus({ preventScroll: true });
+  }
+
+  function answer(btn, name) {
+    if (answered) return;
+    answered = true;
+    buttons.forEach(b => { b.disabled = true; });
+    const right = name === data.character;
+    results[idx] = { character: data.character, picked: name, right };
+
+    if (right) {
+      btn.classList.add("correct");
+      card.classList.add("right");
+      status.textContent = "✓ Correct!";
+      score++;
+      $("score").textContent = score;
+      chime();
+    } else {
+      btn.classList.add("picked-wrong");
+      card.classList.add("wrong");
+      status.textContent = `It was ${data.character}`;
+      buzzer();
+      if (navigator.vibrate) navigator.vibrate(150);
+      setTimeout(() => rightBtn.classList.add("reveal"), 550);
+    }
+    tag.textContent = (right ? "✓ " : "✗ ") + data.character;
+    drawDots();
+    next.hidden = false;
+    setTimeout(() => next.focus({ preventScroll: true }), 600);
+  }
+
+  front.addEventListener("click", () => setFlipped(true));
+  front.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFlipped(true); }
+  });
+  flipBack.addEventListener("click", () => setFlipped(false));
+  next.addEventListener("click", () => {
+    idx++;
+    if (idx < deck.length) showCard(); else showResults();
+  });
+  buttons.concat(flipBack, next).forEach(b => { b.tabIndex = -1; });
+
+  inner.append(front, back);
+  card.appendChild(inner);
+  return card;
+}
+
+function showResults() {
+  const total = deck.length;
+  $("endTitle").textContent = `Well played, ${player}!`;
+  $("endScore").textContent = `${score} / ${total}`;
+  $("endMsg").textContent =
+    score === total ? "A perfect score – every single one!" :
+    score >= total * 0.7 ? "Brilliant work – you really know your Bible characters." :
+    score >= total * 0.4 ? "Good effort! Have another go and see if you can beat it." :
+    "Keep practising – you’ll know them all in no time.";
+  $("resultList").replaceChildren(...results.map(r => {
+    const li = el("li", r.right ? "ok" : "bad");
+    li.append(el("span", "mark", r.right ? "✓" : "✗"), el("span", null, r.character));
+    if (!r.right) li.append(el("small", null, `you chose ${r.picked}`));
+    return li;
+  }));
+  showScreen("end");
+  if (score >= total * 0.7) fanfare();
+}
+
+/* ---------- Wiring ---------- */
+$("nameInput").value = recall("whoisthis-player");
+function startFromInput() {
+  try { beginGame(); }
+  catch (err) {
+    $("errBox").hidden = false;
+    $("errBox").textContent = "Something went wrong – please screenshot this: " + (err && err.message ? err.message : err);
+  }
+}
+function beginGame() {
+  const name = $("nameInput").value.trim().replace(/\s+/g, " ");
+  if (!name) {
+    $("nameHint").textContent = "Type your name to start.";
+    $("nameInput").focus();
+    return;
+  }
+  $("nameHint").textContent = "";
+  player = name;
+  remember("whoisthis-player", player);
+  newGame();
+}
+$("startBtn").addEventListener("click", startFromInput);
+$("nameInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); startFromInput(); }
+});
+$("again").addEventListener("click", newGame);
+$("changePlayer").addEventListener("click", () => {
+  $("nameInput").value = "";
+  showScreen("start");
+  $("nameInput").focus();
+});
+showScreen("start");
+</script>
+</body>
+</html>
