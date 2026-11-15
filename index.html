@@ -5,77 +5,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Who Is This? – Bible Characters</title>
 <!--
-  HOW IT WORKS: the player types their name, then gets 10 random cards, one at a time.
-  One go per card: a wrong answer buzzes and then shows the right name. Score at the end.
-  Change ROUND below for a longer or shorter game.
-  ART: every card has an original cartoon drawn in code, so no image files are needed.
-  To use your own picture for a card, add  image: "images/name.jpg"  to its entry.
+  HOW IT WORKS: type a name, pick a level, get 10 random cards from that level's 20, one go per card.
+  Score 7 or more to unlock the next level (remembered per player on each device).
+  Clues are written in our own words from jw.org's "Lessons You Can Learn From the Bible"
+  and "Walk Courageously With God", with a Bible reference on every card.
+  All cartoons are original drawings made in code – no image files needed.
 -->
 <style>
   :root {
     color-scheme: dark;
-    --bg: #0f172a;
-    --card: #1e293b;
-    --raised: #273449;
-    --line: #334155;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
-    --gold: #e9c46a;
-    --ok: #16a34a;
-    --bad: #dc2626;
+    --bg: #0f172a; --card: #1e293b; --raised: #273449; --line: #334155;
+    --text: #e2e8f0; --muted: #94a3b8; --gold: #e9c46a; --ok: #16a34a; --bad: #dc2626;
     --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  html, body {
-    margin: 0; min-height: 100%;
-    background: var(--bg); color: var(--text);
-    font-family: var(--sans);
-    -webkit-tap-highlight-color: transparent;
-  }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-tap-highlight-color: transparent; }
   body { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
   header {
     position: sticky; top: 0; z-index: 5;
     padding: calc(12px + env(safe-area-inset-top, 0px)) clamp(16px, 3vw, 32px) 12px;
-    background: rgba(15, 23, 42, .94);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, .94); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--line);
-    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
   }
   h1 { margin: 0; flex: 1 1 auto; font-family: var(--serif); font-weight: 600; font-size: clamp(1.3rem, 2.6vw, 1.75rem); }
-  .player { font-size: 1.05rem; }
-  .player b { color: var(--gold); font-weight: 600; }
+  .player b, .levelTag b { color: var(--gold); font-weight: 600; }
   .stat { color: var(--muted); font-variant-numeric: tabular-nums; }
   .stat b { color: var(--text); font-weight: 600; }
 
   .btn {
     appearance: none; font: inherit; font-size: 1rem; cursor: pointer;
     min-height: 48px; padding: 10px 22px; border-radius: 999px;
-    border: 1px solid var(--line); background: var(--card); color: var(--text);
-    touch-action: manipulation;
+    border: 1px solid var(--line); background: var(--card); color: var(--text); touch-action: manipulation;
   }
   .btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1405; font-weight: 600; }
+  .btn.link { background: none; border: none; color: var(--muted); text-decoration: underline; min-height: 40px; padding: 6px 4px; font-size: .9rem; }
+  .btn.link.armed { color: var(--gold); }
   .btn:active { transform: scale(.97); }
-  .btn:focus-visible, .front:focus-visible, .choice:focus-visible, input:focus-visible {
-    outline: 3px solid var(--gold); outline-offset: 3px;
-  }
+  .btn:focus-visible, .front:focus-visible, .choice:focus-visible, .lvl:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 
   main { max-width: 760px; margin: 0 auto; padding: clamp(16px, 3vw, 32px); }
+  .notice { margin: 0 0 18px; padding: 14px 18px; border-radius: 12px; font-size: 1.05rem; line-height: 1.5; }
+  .notice.warn { background: #fef3c7; color: #422006; }
+  .notice.err { background: #fee2e2; color: #450a0a; word-break: break-word; }
 
-  /* --- Start screen --- */
+  /* --- Start --- */
   .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: clamp(20px, 4vw, 36px); }
   .panel h2 { margin: 0 0 10px; font-family: var(--serif); font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 600; }
-  .panel p { margin: 0 0 22px; color: var(--muted); line-height: 1.55; font-size: 1.05rem; max-width: 60ch; }
-  label { display: block; font-size: 1.05rem; margin-bottom: 8px; }
+  .panel p { margin: 0 0 20px; color: var(--muted); line-height: 1.55; font-size: 1.05rem; max-width: 60ch; }
+  label, .label { display: block; font-size: 1.05rem; margin: 0 0 8px; }
   .row { display: flex; flex-wrap: wrap; gap: 12px; }
   input[type="text"] {
-    flex: 1 1 240px; min-height: 52px; padding: 10px 16px; border-radius: 12px;
-    border: 1px solid var(--line); background: var(--bg); color: var(--text);
-    font: inherit; font-size: 1.2rem;
+    width: 100%; min-height: 52px; padding: 10px 16px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 1.2rem;
   }
-  .hint { min-height: 1.4em; margin: 10px 0 0; color: #fca5a5; font-size: .95rem; }
+  .hint { min-height: 1.4em; margin: 8px 0 14px; color: #fca5a5; font-size: .95rem; }
+  .levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 8px; }
+  .lvl {
+    appearance: none; font: inherit; text-align: left; cursor: pointer; color: var(--text);
+    border: 2px solid var(--line); background: var(--raised); border-radius: 14px; padding: 14px 16px; min-height: 96px;
+    display: flex; flex-direction: column; gap: 4px; touch-action: manipulation;
+  }
+  .lvl strong { font-family: var(--serif); font-size: 1.25rem; font-weight: 600; }
+  .lvl span { color: var(--muted); font-size: .92rem; line-height: 1.35; }
+  .lvl .best { color: var(--gold); }
+  .lvl.locked { opacity: .55; cursor: not-allowed; }
+  .lvl:not(.locked):active { transform: scale(.98); }
+  .lvl:not(.locked):hover { border-color: var(--gold); }
 
   /* --- Progress dots --- */
   .dots { display: flex; gap: 8px; justify-content: center; margin: 0 0 18px; }
@@ -84,25 +83,19 @@
   .dot.ok { background: var(--ok); border-color: var(--ok); }
   .dot.bad { background: var(--bad); border-color: var(--bad); }
 
-  /* --- Card + 3D flip --- */
+  /* --- Card + flip --- */
   .card { perspective: 1200px; }
   .inner { display: grid; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2, .7, .2, 1); }
   .card.flipped .inner { transform: rotateY(180deg); }
-  .face {
-    grid-area: 1 / 1;
-    backface-visibility: hidden; -webkit-backface-visibility: hidden;
-    border-radius: 16px; overflow: hidden;
-    background: var(--card); border: 1px solid var(--line);
-    display: flex; flex-direction: column;
-  }
+  .face { grid-area: 1 / 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 16px; overflow: hidden; background: var(--card); border: 1px solid var(--line); display: flex; flex-direction: column; }
   .front { position: relative; cursor: pointer; }
-  .art { position: relative; flex: 1 1 auto; aspect-ratio: 2 / 1; background: var(--raised); }
-  .art svg, .art img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
-  .tag {
-    position: absolute; top: 12px; right: 12px;
-    padding: 6px 14px; border-radius: 999px; font-size: .9rem;
-    background: rgba(15, 23, 42, .8); color: var(--text);
-  }
+  .art { position: relative; flex: 1 1 auto; aspect-ratio: 2 / 1; background: var(--raised); overflow: hidden; }
+  .art svg, .art img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; transition: filter .6s; }
+  .art.mystery svg, .art.mystery img { filter: blur(18px) brightness(.55) saturate(.6); }
+  .mysteryTag { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; font-family: var(--serif); color: #fff; font-size: clamp(1.1rem, 3vw, 1.4rem); padding: 20px; }
+  .mysteryTag b { display: block; font-size: 3.4rem; line-height: 1; margin-bottom: 6px; }
+  .art:not(.mystery) .mysteryTag { display: none; }
+  .tag { position: absolute; top: 12px; right: 12px; padding: 6px 14px; border-radius: 999px; font-size: .9rem; background: rgba(15, 23, 42, .8); color: var(--text); }
   .card.right .tag { background: var(--ok); color: #fff; }
   .card.wrong .tag { background: var(--bad); color: #fff; }
   .clue { padding: 16px 20px 20px; border-top: 1px solid var(--line); font-family: var(--serif); font-size: clamp(1.1rem, 2.4vw, 1.3rem); line-height: 1.4; }
@@ -110,7 +103,7 @@
   .back { transform: rotateY(180deg); padding: 18px 20px 20px; gap: 10px; }
   .back-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .back-top .btn { min-height: 42px; padding: 8px 16px; font-size: .95rem; }
-  .status { color: var(--muted); font-size: 1rem; text-align: right; }
+  .status { color: var(--muted); font-size: 1rem; text-align: right; font-weight: 600; }
   .card.right .status { color: #4ade80; }
   .card.wrong .status { color: #fca5a5; }
   .question { margin: 6px 0 0; font-family: var(--serif); font-size: clamp(1.6rem, 4vw, 2rem); font-weight: 600; }
@@ -118,10 +111,8 @@
   .choices { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
   .choice {
     appearance: none; font: inherit; font-size: 1.2rem; cursor: pointer; text-align: left;
-    min-height: 56px; padding: 10px 16px; border-radius: 12px;
-    border: 1px solid var(--line); background: var(--raised); color: var(--text);
-    transition: background-color .2s, border-color .2s, opacity .2s;
-    touch-action: manipulation;
+    min-height: 54px; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--raised); color: var(--text);
+    transition: background-color .2s, border-color .2s, opacity .2s; touch-action: manipulation;
   }
   .choice:active { transform: scale(.985); }
   .choice:disabled { cursor: default; opacity: .4; }
@@ -130,30 +121,25 @@
   .choice.correct::after, .choice.reveal::after { content: "  ✓"; }
   .choice.picked-wrong { background: var(--bad); border-color: var(--bad); color: #fff; opacity: 1; animation: shake .45s; }
   .choice.picked-wrong::after { content: "  ✗"; }
-  .next { margin-top: 6px; align-self: stretch; }
+  .learn { margin: 4px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--raised); border-left: 4px solid var(--gold); line-height: 1.45; }
+  .learn .fun { display: block; font-size: 1.05rem; }
+  .learn .ref { display: block; margin-top: 6px; color: var(--muted); font-size: .95rem; }
+  .next { margin-top: 4px; align-self: stretch; }
 
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-8px); } 40% { transform: translateX(7px); }
-    60% { transform: translateX(-5px); } 80% { transform: translateX(3px); }
-  }
-  @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, .7); }
-    100% { box-shadow: 0 0 0 14px rgba(74, 222, 128, 0); }
-  }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, .7); } 100% { box-shadow: 0 0 0 14px rgba(74, 222, 128, 0); } }
 
   /* --- Results --- */
-  .big-score { font-family: var(--serif); font-size: clamp(3rem, 10vw, 4.5rem); font-weight: 600; color: var(--gold); margin: 4px 0 6px; line-height: 1; }
+  .big-score { font-family: var(--serif); font-size: clamp(3rem, 10vw, 4.5rem); font-weight: 600; color: var(--gold); margin: 4px 0 4px; line-height: 1; }
+  .rank { font-family: var(--serif); font-size: 1.5rem; margin: 0 0 6px; color: var(--text) !important; }
+  .unlock { margin: 0 0 18px; padding: 12px 16px; border-radius: 12px; background: #14532d; color: #dcfce7 !important; font-weight: 600; }
   .results { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 8px; }
-  .results li { display: flex; gap: 12px; align-items: baseline; padding: 10px 14px; border-radius: 10px; background: var(--raised); font-size: 1.05rem; }
+  .results li { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 10px 14px; border-radius: 10px; background: var(--raised); font-size: 1.05rem; }
   .results .mark { font-weight: 700; width: 1.2em; flex: none; }
   .results .ok .mark { color: #4ade80; }
   .results .bad .mark { color: #f87171; }
   .results small { color: var(--muted); font-size: .92rem; }
 
-  .notice { margin: 0 0 18px; padding: 14px 18px; border-radius: 12px; font-size: 1.05rem; line-height: 1.5; }
-  .notice.warn { background: #fef3c7; color: #422006; }
-  .notice.err { background: #fee2e2; color: #450a0a; word-break: break-word; }
   @media (prefers-reduced-motion: reduce) {
     .inner { transition: none; }
     .choice.picked-wrong, .choice.reveal { animation: none; }
@@ -164,45 +150,45 @@
 <header>
   <h1>Who is this?</h1>
   <span class="player" id="playerTag" hidden>Player: <b id="playerName"></b></span>
+  <span class="levelTag stat" id="levelTag" hidden>Level <b id="levelName"></b></span>
   <span class="stat" id="progress" hidden></span>
   <span class="stat" id="scoreTag" hidden>Score <b id="score">0</b></span>
 </header>
 
 <main>
-  <p class="notice warn" id="jsWarn">⚠ This app isn’t running the game, so the Start button won’t work here. Open the file in Chrome instead: in your Files app, long-press the file, tap <b>Open with</b>, then choose <b>Chrome</b>.</p>
+  <p class="notice warn" id="jsWarn">⚠ This app isn’t running the game, so the buttons won’t work here. Open it in Chrome or Safari instead.</p>
   <p class="notice err" id="errBox" hidden></p>
-  <!-- Start -->
+
   <section class="screen" id="start">
     <div class="panel">
       <h2>Bible character challenge</h2>
-      <p>You’ll get 10 cards, one at a time. Look at the picture and the clue, tap the card, then choose who it is. You only get one go at each card, so think carefully!</p>
-      <div id="startForm">
-        <label for="nameInput">Who’s playing?</label>
-        <div class="row">
-          <input type="text" id="nameInput" autocomplete="off" maxlength="20" placeholder="Type your name" enterkeyhint="go" spellcheck="false">
-          <button class="btn primary" id="startBtn" type="button">Start game</button>
-        </div>
-        <p class="hint" id="nameHint" aria-live="polite"></p>
-      </div>
+      <p>Each game is 10 cards, one at a time. Look at the picture and clue, tap the card, then choose who it is. One go per card! Score 7 or more to unlock the next level.</p>
+      <label for="nameInput">Who’s playing?</label>
+      <input type="text" id="nameInput" autocomplete="off" maxlength="20" placeholder="Type your name" enterkeyhint="done" spellcheck="false">
+      <p class="hint" id="nameHint" aria-live="polite"></p>
+      <span class="label">Choose a level</span>
+      <div class="levels" id="levelPicker"></div>
+      <button class="btn link" id="unlockAll" type="button">Grown-ups: unlock all levels for this player</button>
     </div>
   </section>
 
-  <!-- Play -->
   <section class="screen" id="play" hidden>
     <div class="dots" id="dots" aria-hidden="true"></div>
     <div id="stage"></div>
   </section>
 
-  <!-- Results -->
   <section class="screen" id="end" hidden>
     <div class="panel">
       <h2 id="endTitle"></h2>
       <div class="big-score" id="endScore"></div>
+      <p class="rank" id="endRank"></p>
       <p id="endMsg"></p>
+      <p class="unlock" id="endUnlock" hidden></p>
       <ul class="results" id="resultList"></ul>
       <div class="row">
-        <button class="btn primary" id="again" type="button">Play again</button>
-        <button class="btn" id="changePlayer" type="button">Change player</button>
+        <button class="btn primary" id="nextLevel" type="button" hidden>Try the next level →</button>
+        <button class="btn" id="again" type="button">Play this level again</button>
+        <button class="btn" id="home" type="button">Change player or level</button>
       </div>
     </div>
   </section>
@@ -347,7 +333,7 @@ const ART = (() => {
 
     v += kneel
       ? `<path d="M-16,-98 Q-30,-74 -26,-44 Q-28,-40 -20,-40 L42,-40 Q50,-40 47,-50 L22,-54 Q26,-76 16,-98Z" fill="${robe}" ${st()}/>`
-      : `<ellipse cx="-12" cy="-1" rx="9" ry="4" fill="#6b4423" ${st(2)}/><ellipse cx="12" cy="-1" rx="9" ry="4" fill="#6b4423" ${st(2)}/>` +
+      : `<ellipse cx="-12" cy="-1" rx="9" ry="4" fill="${o.feet || "#6b4423"}" ${st(2)}/><ellipse cx="12" cy="-1" rx="9" ry="4" fill="${o.feet || "#6b4423"}" ${st(2)}/>` +
         `<path d="M-16,-98 Q-32,-50 -32,-4 L32,-4 Q32,-50 16,-98Z" fill="${robe}" ${st()}/>`;
     if (o.belt && !kneel) v += `<path d="M-26,-62 Q0,-56 26,-62 L27,-54 Q0,-48 -27,-54Z" fill="${o.belt}" ${st(2)}/>`;
     v += o.collar
@@ -425,22 +411,6 @@ const ART = (() => {
       `<path d="M188,112 h-22 M188,128 h-30 M188,144 h-18" stroke="${O}" stroke-width="2.5" stroke-linecap="round" opacity=".5"/>` +
       person(225, 192, 0.9, { robe: "#f4efe3", hairStyle: "short", hair: "#2b1a10", pose: "run", mood: "worried", mouth: "open", look: 2 })),
 
-    "Jeremiah": () => scene("#a7c7e7", "#f1e3c6",
-      `<rect x="-5" y="92" width="410" height="78" fill="#d8b98a" ${st()}/>` +
-      Array.from({ length: 11 }, (_, i) => `<rect x="${i * 40 - 4}" y="78" width="22" height="16" fill="#d8b98a" ${st(2)}/>`).join("") +
-      `<path d="M0,115 H400 M0,138 H400 M40,92 V115 M120,92 V115 M200,92 V115 M280,92 V115 M360,92 V115 M80,115 V138 M160,115 V138 M240,115 V138 M320,115 V138" stroke="#b8976a" stroke-width="2"/>` +
-      cloud(70, 40, 0.8) + cloud(330, 30, 0.6) + ground("#c9a46a", 168) +
-      person(200, 194, 0.95, {
-        robe: "#6a8d3a", belt: "#7a4a1f", hairStyle: "short", hair: "#4a2c17", beard: "short", mood: "worried", mouth: "open",
-        lh: [-50, -90], rh: [50, -90],
-        mid: `<rect x="-24" y="-110" width="7" height="28" rx="2" fill="#6b4220" ${st(2)}/><rect x="17" y="-110" width="7" height="28" rx="2" fill="#6b4220" ${st(2)}/><rect x="-62" y="-96" width="124" height="12" rx="5" fill="#8b5a2b" ${st()}/>`
-      })),
-
-    "Samuel": () => scene("#2e335c", "#7b6fa8",
-      rain(0, 400, 20, 150, 60, "#b8c4ff") + cloud(60, 30, 1.1, "#5d5a86") + cloud(200, 18, 1.2, "#4f4c78") + cloud(340, 34, 1.1, "#5d5a86") +
-      bolt(110, 40, 1) + bolt(300, 46, 0.9) + ground("#d9a93a", 166) +
-      Array.from({ length: 28 }, (_, i) => `<path d="M${i * 15 + 4},180 V164" stroke="#a87a1e" stroke-width="2"/><ellipse cx="${i * 15 + 4}" cy="161" rx="3" ry="6" fill="#e9c46a" ${st(1.2)}/>`).join("") +
-      person(200, 196, 0.95, { robe: "#7b3f61", sleeve: "#a8577f", belt: "#d4a017", hairStyle: "bald", hair: "#dcdcdc", beard: "long", beardC: "#ececec", mouth: "open", pose: "up", lookY: -2, old: true })),
 
     "Jonah": () => scene("#1d7ea3", "#05324a",
       rays(200, -60, 14, "#e6fbff", 0.08) +
@@ -525,10 +495,6 @@ const ART = (() => {
       }) +
       person(278, 194, 0.86, { head: "veil", veil: "#e76f51", robe: "#f4a261", skin: "#d79c6c", mood: "happy", mouth: "smile", pose: "pointR", rh: [50, -74], look: 2, lookY: 2 }, true)),
 
-    "Isaiah": () => scene("#fff3c4", "#f4a940",
-      rays(320, -10, 16, "#ffffff", 0.3) + cloud(80, 40, 0.8) + cloud(250, 60, 0.5) +
-      hills("#e2b56a", 160) + ground("#d8a85a", 174) +
-      person(196, 196, 0.95, { head: "turban", turban: "#efe6cf", robe: "#2f5d8a", belt: "#e9c46a", beard: "short", hair: "#5a3a1a", mood: "happy", mouth: "grin", pose: "upR", look: 1, lookY: -2 })),
 
     "Peter": () => scene("#1e3a64", "#5b86b5",
       cloud(60, 26, 1, "#3a5277") + cloud(250, 18, 1.1, "#334a6e") + rain(0, 400, 10, 120, 50, "#a9c4e8") +
@@ -556,16 +522,6 @@ const ART = (() => {
         extra: Array.from({ length: 12 }, (_, i) => `<rect x="${-9 + (i % 3) * 6}" y="${-84 + Math.floor(i / 3) * 6}" width="5" height="5" fill="${["#e63946", "#2a9d8f", "#f4c430", "#8338ec"][i % 4]}" stroke="${O}" stroke-width=".8"/>`).join("")
       })),
 
-    "Miriam": () => scene("#8fd3f0", "#e7f5fb",
-      cloud(70, 30, 0.7) + waves(118, "#3a86c8", 6, 36) +
-      `<rect x="-5" y="152" width="410" height="60" fill="#efd29a" ${st()}/>` +
-      person(320, 174, 0.45, { head: "veil", veil: "#2a9d8f", robe: "#e9c46a", pose: "up", mouth: "grin", mood: "happy" }) +
-      person(80, 176, 0.45, { head: "veil", veil: "#8338ec", robe: "#f4a261", pose: "up", mouth: "grin", mood: "happy" }) +
-      `<path d="M262,60 v-18 l12,-4 v18" fill="none" ${st(2.5)}/><circle cx="259" cy="60" r="4" fill="${O}"/><circle cx="271" cy="56" r="4" fill="${O}"/><path d="M136,48 v-18" ${st(2.5)}/><circle cx="133" cy="48" r="4" fill="${O}"/>` +
-      person(200, 196, 0.95, {
-        head: "veil", veil: "#c0392b", robe: "#f2c14e", old: true, mood: "happy", mouth: "grin", lh: [-40, -140], rh: [36, -156],
-        extra: `<circle cx="46" cy="-164" r="16" fill="#e9c46a" ${st(2)}/><circle cx="46" cy="-164" r="10" fill="#f7e7b4"/>` + [0, 90, 180, 270].map(a => `<circle cx="${n(46 + 16 * Math.cos(a * Math.PI / 180))}" cy="${n(-164 + 16 * Math.sin(a * Math.PI / 180))}" r="3" fill="#c0c0c0" ${st(1)}/>`).join("")
-      })),
 
     "Jacob": () => scene("#101a38", "#2b3d6b",
       stars(30, 90) + `<circle cx="60" cy="34" r="13" fill="#fdf3c4"/><circle cx="66" cy="30" r="11" fill="#14204a"/>` +
@@ -583,13 +539,6 @@ const ART = (() => {
         extra: `<path d="M26,-68 Q20,-50 30,-44 L48,-44 Q58,-50 52,-68 L46,-74 L32,-74Z" fill="#d4a017" ${st(2)}/><path d="M32,-74 Q39,-80 46,-74" fill="none" ${st(2)}/><circle cx="58" cy="-40" r="4" fill="#f4c430" ${st(1.2)}/>`
       })),
 
-    "Reuben": () => scene("#ffd28e", "#fbecc8",
-      `<circle cx="320" cy="44" r="20" fill="#ffe9a8"/>` + hills("#ebc58a", 150) +
-      camel(300, 146, 0.6) + camel(328, 146, 0.6) + camel(356, 146, 0.6) + ground("#e3b778", 162) +
-      `<ellipse cx="112" cy="178" rx="52" ry="16" fill="#2a1a10" ${st()}/>` +
-      [[64, 176], [80, 166], [104, 162], [130, 163], [152, 168], [162, 180], [150, 192], [74, 190]].map(([a, b]) => `<ellipse cx="${a}" cy="${b}" rx="9" ry="6" fill="#a8a29a" ${st(1.5)}/>`).join("") +
-      `<path d="M108,186 L104,170" stroke="${O}" stroke-width="9" stroke-linecap="round"/><path d="M108,186 L104,170" stroke="#d9a066" stroke-width="5" stroke-linecap="round"/><circle cx="104" cy="168" r="5" fill="#d9a066" ${st(1.5)}/>` +
-      person(208, 196, 0.95, { robe: "#556b2f", belt: "#b5651d", head: "turban", turban: "#c97c3a", beard: "short", hair: "#4a2c17", mood: "worried", mouth: "open", lh: [-60, -64], rh: [-44, -56], look: -2, lookY: 2 })),
 
     "Lot": () => scene("#5c1414", "#f28c28",
       [[10, 150, 40, 50], [48, 150, 34, 70], [86, 150, 44, 40]].map(([a, b, w, h]) => `<rect x="${a}" y="${b - h}" width="${w}" height="${h}" fill="#3a1208" ${st(2)}/>`).join("") +
@@ -636,13 +585,6 @@ const ART = (() => {
       person(84, 194, 0.86, { kneel: true, head: "turban", turban: "#4a7c59", robe: "#9c6b3c", beard: "short", hair: "#4a2c17", eyes: "wide", mouth: "open", mood: "worried", lookY: -3, look: 2, lh: [-34, -116], rh: [36, -116] }) +
       person(152, 194, 0.8, { kneel: true, head: "veil", veil: "#d4a017", robe: "#8e5572", eyes: "wide", mouth: "open", lookY: -3, look: 2, pose: "pray" })),
 
-    "Gideon": () => scene("#ffcf99", "#cfe8f5",
-      `<path d="M300,160 A40,40 0 0 1 380,160Z" fill="#ffd166" ${st(2)}/>` + hills("#c4a77a", 162) + ground("#a07a4a", 168) +
-      `<ellipse cx="236" cy="184" rx="96" ry="14" fill="#b9935e"/>` +
-      g(236, 182, 1.1, `<path d="M-40,0 Q-46,-14 -30,-16 Q-26,-26 -10,-22 Q0,-30 12,-22 Q26,-28 32,-16 Q46,-14 40,0 Q30,8 0,6 Q-30,8 -40,0Z" fill="#fbf8ee" ${st()}/>` +
-        [[-30, -24], [-6, -32], [18, -30], [36, -22], [-20, 10], [24, 10]].map(([a, b]) => `<path d="M${a},${b} q-3,5 0,7 q3,-2 0,-7Z" fill="#6ec1ea" ${st(1)}/>`).join("")) +
-      `<path d="M300,176 Q318,196 336,176Z" fill="#8b5a2b" ${st(2)}/><ellipse cx="318" cy="176" rx="18" ry="5" fill="#6ec1ea" ${st(2)}/>` +
-      person(136, 194, 0.9, { kneel: true, head: "headband", band: "#2a9d8f", hairStyle: "short", hair: "#3a2416", beard: "short", robe: "#b56b45", eyes: "wide", mouth: "grin", mood: "happy", look: 2, lookY: 2, pose: "pointR" })),
 
     "Naomi": () => scene("#f9c784", "#fdeacb",
       `<circle cx="80" cy="60" r="24" fill="#ffe29a"/>` + hills("#e0ad6e", 140) +
@@ -674,55 +616,503 @@ const ART = (() => {
         extra: `<path d="M-42,-78 L-50,-58 M-42,-78 L-34,-58" stroke="#8a7a5a" stroke-width="1.5"/><path d="M-54,-58 Q-42,-42 -30,-58Z" fill="#b08d2c" ${st(2)}/><path d="M-44,-64 q-8,-12 0,-22 q8,-10 -2,-22" fill="none" stroke="#e6e0f0" stroke-width="3" opacity=".7"/>`
       })),
 
-    "Zipporah": () => scene("#ffe2a8", "#fdf5e3",
-      palm(350, 168, 0.9) + ground("#e6c48a", 168) +
-      `<rect x="48" y="146" width="84" height="32" fill="#b8a98e" ${st()}/><ellipse cx="90" cy="146" rx="42" ry="9" fill="#2a3a4a" ${st()}/><path d="M56,146 V100 M124,146 V100 M50,100 H130" ${st(4)}/><path d="M90,100 V128" stroke="#7a4a1f" stroke-width="2"/><path d="M82,128 h16 l-2,12 h-12Z" fill="#8b5a2b" ${st(1.5)}/>` +
-      sheep(284, 182, 0.8) + sheep(330, 186, 0.75, true) + sheep(250, 192, 0.6) +
-      person(184, 194, 0.9, {
-        head: "veil", veil: "#3a86ff", robe: "#e76f51", belt: "#f4d35e", mood: "happy", mouth: "smile", lh: [-24, -50], rh: [30, -128],
-        extra: `<path d="M18,-146 Q14,-168 28,-172 L26,-180 L40,-180 L38,-172 Q52,-168 48,-146 Q44,-132 33,-132 Q22,-132 18,-146Z" fill="#c4683a" ${st(2)}/>`
-      }))
   };
+
+  /* ---- Extra props ---- */
+  const txt = (x, y, size, t, fill = O, anchor = "start") =>
+    `<text x="${x}" y="${y}" font-family="Georgia, serif" font-weight="700" font-size="${size}" fill="${fill}" text-anchor="${anchor}">${t}</text>`;
+  const zzz = (x, y) => txt(x, y, 14, "z", "#fff8d6") + txt(x + 10, y - 12, 19, "z", "#fff8d6");
+  const bubble = (x, y, t) =>
+    `<path d="M${x - 34},${y - 20} H${x + 34} Q${x + 42},${y - 20} ${x + 42},${y - 12} V${y + 8} Q${x + 42},${y + 16} ${x + 34},${y + 16} H${x - 14} L${x - 28},${y + 30} L${x - 24},${y + 16} H${x - 34} Q${x - 42},${y + 16} ${x - 42},${y + 8} V${y - 12} Q${x - 42},${y - 20} ${x - 34},${y - 20}Z" fill="#fff" ${st(2)}/>` +
+    txt(x, y + 5, 17, t, O, "middle");
+  const lion = (x, y, s, flip) => g(x, y, s,
+    `<path d="M-30,-14 Q-48,-20 -46,-38" fill="none" ${st(3)}/><circle cx="-46" cy="-40" r="5" fill="#8b5a2b" ${st(1.5)}/>` +
+    `<rect x="-24" y="-12" width="10" height="14" rx="3" fill="#e8bd62" ${st(2)}/><rect x="10" y="-12" width="10" height="14" rx="3" fill="#e8bd62" ${st(2)}/>` +
+    `<ellipse cx="-4" cy="-20" rx="30" ry="15" fill="#e8bd62" ${st()}/>` +
+    `<circle cx="26" cy="-32" r="20" fill="#b5651d" ${st()}/><circle cx="28" cy="-30" r="13" fill="#f0c872" ${st(2)}/>` +
+    `<path d="M21,-33 q3,2 6,0 M30,-33 q3,2 6,0" fill="none" ${st(1.6)}/><path d="M27,-27 l2,2 l2,-2Z" fill="#5a2a1a"/><path d="M25,-23 Q29,-20 33,-23" fill="none" ${st(1.4)}/>`, flip);
+  const snake = (x, y, s, flip) => g(x, y, s,
+    `<path d="M0,0 Q22,-8 12,-24 Q2,-38 22,-46" fill="none" stroke="${O}" stroke-width="11" stroke-linecap="round"/>` +
+    `<path d="M0,0 Q22,-8 12,-24 Q2,-38 22,-46" fill="none" stroke="#6aab55" stroke-width="7" stroke-linecap="round"/>` +
+    `<ellipse cx="27" cy="-48" rx="10" ry="7" fill="#6aab55" ${st(2)}/><circle cx="30" cy="-51" r="2.2" fill="#111"/>` +
+    `<path d="M36,-46 L44,-45 M36,-46 L43,-41" stroke="#c1121f" stroke-width="1.6" stroke-linecap="round"/>`, flip);
+  const fruitTree = (x, y, s) => tree(x, y, s) +
+    g(x, y, s, [[-20, -60], [14, -70], [0, -88], [22, -52], [-12, -76], [-26, -48]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="5" fill="#e63946" ${st(1.5)}/>`).join(""));
+  const burningBush = (x, y, s) =>
+    g(x, y, s, `<path d="M-42,0 Q-48,-26 -28,-30 Q-24,-46 0,-42 Q22,-48 28,-30 Q48,-26 42,0Z" fill="#4f9a45" ${st()}/>`) +
+    flame(x - 18 * s, y - 20 * s, 1.1 * s) + flame(x + 16 * s, y - 24 * s, 1.2 * s) + flame(x, y - 30 * s, 1.6 * s);
+  const grapes = (x, y, s) => g(x, y, s,
+    `<path d="M0,-30 L0,-40" ${st(3)}/><ellipse cx="10" cy="-32" rx="9" ry="4" fill="#6aab55" ${st(1.5)}/>` +
+    [[-12, -20], [0, -22], [12, -20], [-18, -8], [-6, -10], [6, -10], [18, -8], [-12, 2], [0, 0], [12, 2], [-6, 12], [6, 12], [0, 22]]
+      .map(([a, b]) => `<circle cx="${a}" cy="${b}" r="7.5" fill="#6a2c91" ${st(1.5)}/>`).join(""));
+  const camelC = (x, y, s, flip) => g(x, y, s,
+    [-26, -12, 10, 24].map(a => `<rect x="${a}" y="-38" width="7" height="38" fill="#c4914f" ${st(2)}/>`).join("") +
+    `<ellipse cx="-8" cy="-58" rx="14" ry="12" fill="#d4a15e" ${st()}/><ellipse cx="14" cy="-56" rx="12" ry="10" fill="#d4a15e" ${st()}/>` +
+    `<ellipse cx="0" cy="-44" rx="36" ry="15" fill="#d4a15e" ${st()}/>` +
+    `<path d="M28,-50 Q40,-60 42,-80 L56,-82 Q62,-80 61,-74 L50,-70 Q48,-56 34,-38Z" fill="#d4a15e" ${st()}/><circle cx="51" cy="-77" r="2" fill="#111"/>`, flip);
+  const donkeyBody = (x, y, s, flip) => g(x, y, s,
+    [-34, -18, 14, 28].map(a => `<rect x="${a}" y="-32" width="9" height="32" fill="#8d8d8d" ${st(2)}/>`).join("") +
+    `<path d="M-42,-48 Q-56,-42 -52,-26" fill="none" ${st(3)}/><ellipse cx="0" cy="-46" rx="44" ry="20" fill="#9a9a9a" ${st()}/>` +
+    `<path d="M28,-58 L40,-96 L62,-92 L48,-50Z" fill="#8d8d8d" ${st()}/>` +
+    `<path d="M40,-96 L34,-124 L48,-100Z M50,-96 L52,-126 L58,-98Z" fill="#8d8d8d" ${st(2)}/>` +
+    `<ellipse cx="58" cy="-90" rx="22" ry="12" transform="rotate(25 58 -90)" fill="#9a9a9a" ${st()}/>` +
+    `<ellipse cx="74" cy="-80" rx="9" ry="8" fill="#d6d0c4" ${st(2)}/><circle cx="54" cy="-96" r="2.6" fill="#111"/>`, flip);
+  const tent = (x, y, w, h, c = "#a8763e") =>
+    `<path d="M${x - w / 2},${y} L${x},${y - h} L${x + w / 2},${y}Z" fill="${c}" ${st()}/><path d="M${x},${y - h} L${x + w * 0.12},${y} L${x - w * 0.12},${y}Z" fill="#3a2414"/>`;
+  const stalks = (x0, x1, yBase, h, c = "#d9a93a", head = "#e9c46a") =>
+    Array.from({ length: Math.floor((x1 - x0) / 13) }, (_, i) => {
+      const x = x0 + i * 13 + (i % 2) * 4;
+      return `<path d="M${x},${yBase} Q${x + 3},${yBase - h / 2} ${x + 1},${yBase - h}" fill="none" stroke="${c}" stroke-width="2"/><ellipse cx="${x + 1}" cy="${yBase - h - 4}" rx="3" ry="7" fill="${head}" ${st(1)}/>`;
+    }).join("");
+  const reeds = (x0, x1, yBase, h) =>
+    Array.from({ length: Math.floor((x1 - x0) / 9) }, (_, i) => {
+      const x = x0 + i * 9, hh = h - (i % 3) * 12;
+      return `<path d="M${x},${yBase} Q${x - 3},${yBase - hh / 2} ${x + 2},${yBase - hh}" fill="none" stroke="#3f7f3a" stroke-width="3" stroke-linecap="round"/>` +
+        (i % 2 ? `<rect x="${x - 1}" y="${yBase - hh - 2}" width="6" height="16" rx="3" fill="#7a4a22"/>` : "");
+    }).join("");
+  const bricks = (x, y, w, h, c = "#d8b98a", line = "#b8976a") => {
+    let l = "";
+    for (let r = 0, yy = y + 14; yy < y + h; yy += 14, r++) l += `<path d="M${x},${yy} H${x + w}" stroke="${line}" stroke-width="2"/>`;
+    for (let r = 0; r * 14 < h; r++) for (let xx = x + (r % 2 ? 14 : 28); xx < x + w; xx += 28) l += `<path d="M${xx},${y + r * 14} V${Math.min(y + r * 14 + 14, y + h)}" stroke="${line}" stroke-width="2"/>`;
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}" ${st()}/>${l}`;
+  };
+  const fireChariot = (x, y, s) => g(x, y, s,
+    `<path d="M-16,-6 L16,-6 L12,-24 L-12,-24Z" fill="#fcbf49" ${st(1.5)}/>` +
+    `<circle cx="0" cy="0" r="10" fill="none" stroke="#f77f00" stroke-width="4"/><path d="M0,-10 V10 M-10,0 H10" stroke="#f77f00" stroke-width="2"/>`) +
+    flame(x + 28 * s, y + 4 * s, 0.7 * s) + flame(x - 6 * s, y - 20 * s, 0.6 * s);
+  const locust = (x, y, s, flip) => g(x, y, s,
+    `<path d="M-4,2 L-12,12 M4,2 L12,12" ${st(2)}/><ellipse cx="0" cy="0" rx="15" ry="5" fill="#8cc152" ${st(1.5)}/>` +
+    `<path d="M-8,-3 Q2,-16 12,-4Z" fill="#dcedc8" opacity=".9" ${st(1.2)}/><circle cx="15" cy="-1" r="4.5" fill="#8cc152" ${st(1.5)}/><circle cx="16.5" cy="-2" r="1.3" fill="#111"/>`, flip);
+  const honeycomb = (x, y, s) => g(x, y, s,
+    [[0, 0], [12, 0], [6, 10], [-6, 10], [18, 10], [6, -10]].map(([a, b]) => `<path d="M${a - 6},${b} L${a - 3},${b - 5} L${a + 3},${b - 5} L${a + 6},${b} L${a + 3},${b + 5} L${a - 3},${b + 5}Z" fill="#f4c430" ${st(1.2)}/>`).join(""));
+  const tamb = (x, y, r = 15) =>
+    `<circle cx="${x}" cy="${y}" r="${r}" fill="#e9c46a" ${st(2)}/><circle cx="${x}" cy="${y}" r="${r * 0.62}" fill="#f7e7b4"/>` +
+    [0, 90, 180, 270].map(a => `<circle cx="${n(x + r * Math.cos(a * Math.PI / 180))}" cy="${n(y + r * Math.sin(a * Math.PI / 180))}" r="3" fill="#c0c0c0" ${st(1)}/>`).join("");
+  const staff = (hx) => `<path d="M${hx},-4 L${hx},-162 Q${hx},-176 ${hx - 12},-170" stroke="#7a4a1f" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+  const scrollHeld = `<rect x="-22" y="-82" width="44" height="22" fill="#f3e6c4" ${st(2)}/><rect x="-27" y="-85" width="8" height="28" rx="3" fill="#a0693a" ${st(2)}/><rect x="19" y="-85" width="8" height="28" rx="3" fill="#a0693a" ${st(2)}/><path d="M-14,-76 H14 M-14,-70 H10 M-14,-64 H12" stroke="#9c8a63" stroke-width="1.5"/>`;
+  const altar = (x, y, w = 70) =>
+    `<rect x="${x - w / 2}" y="${y - 28}" width="${w}" height="28" fill="#a8a29a" ${st()}/><path d="M${x - w / 2},${y - 14} H${x + w / 2} M${x - w / 6},${y - 28} V${y - 14} M${x + w / 6},${y - 14} V${y}" stroke="#7e7870" stroke-width="2"/>`;
+  const crowd = (pts, c = "#8d7a5c", op = 0.55) =>
+    `<g fill="${c}" opacity="${op}">` + pts.map(([a, b]) => `<circle cx="${a}" cy="${b}" r="10"/><path d="M${a - 15},${b + 38} Q${a},${b + 4} ${a + 15},${b + 38}Z"/>`).join("") + `</g>`;
+
+  Object.assign(S, {
+    /* ---------- Level 1 ---------- */
+    "Adam": () => scene("#c5ebc8", "#f3fbe6",
+      cloud(70, 30, 0.7) + hills("#9fd38a", 150) + tree(36, 172, 0.9) + fruitTree(362, 172, 0.85) + ground("#7cb342", 168) +
+      elephant(98, 182, 0.45) + sheep(150, 188, 0.6) + lion(318, 188, 0.62, true) +
+      person(222, 196, 0.92, { robe: "#6aab55", belt: "#3d6e2a", hairStyle: "short", hair: "#4a2c17", beard: "short", mood: "happy", mouth: "grin", pose: "pointR", rh: [56, -104], look: 2 }) +
+      bubble(300, 78, "Lion!")),
+
+    "Eve": () => scene("#c8ecd0", "#f4fbe9",
+      cloud(70, 34, 0.6) + ground("#86c45a", 168) + fruitTree(286, 172, 1.25) + snake(290, 158, 1.05, true) +
+      person(160, 194, 0.92, {
+        hairStyle: "long", hair: "#6b3a1f", robe: "#8bc34a", belt: "#5e9c4a", skin: "#d79c6c", eyes: "wide", mouth: "small", mood: "worried", look: 2,
+        lh: [-24, -50], rh: [48, -104], extra: `<circle cx="55" cy="-110" r="8" fill="#e63946" ${st(2)}/><path d="M55,-118 l2,-5" ${st(2)}/>`
+      })),
+
+    "Abraham": () => scene("#ffd9a0", "#fff2dc",
+      `<circle cx="330" cy="44" r="20" fill="#ffe9a8"/>` + hills("#ebc58a", 150) +
+      house(10, 150, 24, 22) + house(38, 150, 28, 34) + house(72, 150, 22, 18) + ground("#e3b778", 166) +
+      camelC(320, 186, 0.62) + sheep(262, 190, 0.6) +
+      person(166, 194, 0.92, {
+        head: "turban", turban: "#e9e4d0", beard: "long", beardC: "#d6d6d6", old: true, robe: "#7a4a24", belt: "#e9c46a",
+        mood: "happy", mouth: "grin", pose: "pointR", rh: [60, -108], lh: [-30, -80], look: 2, mid: staff(-30)
+      })),
+
+    "Moses": () => scene("#ffc98a", "#fff0d6",
+      `<path d="M-5,152 L80,58 L172,152Z" fill="#b8865a" ${st(2)}/>` + ground("#c49a5a", 170) +
+      burningBush(278, 170, 1.1) + sheep(352, 190, 0.6, true) +
+      `<ellipse cx="206" cy="186" rx="9" ry="4" fill="#6b4423" ${st(1.5)}/><ellipse cx="222" cy="190" rx="9" ry="4" fill="#6b4423" ${st(1.5)}/>` +
+      person(146, 196, 0.92, {
+        head: "turban", turban: "#d9cbb0", beard: "short", hair: "#3a2416", robe: "#556b2f", belt: "#c97c3a", feet: "#c98b5a",
+        eyes: "wide", mouth: "open", mood: "worried", look: 2, lh: [-30, -80], rh: [28, -134], mid: staff(-30)
+      })),
+
+    "David": () => scene("#a9d6f2", "#eef8fd",
+      cloud(60, 30, 0.7) + hills("#a9cf86", 150) + ground("#8dbb5c", 170) +
+      `<path d="M-5,188 Q120,178 220,192 T405,186 V205 H-5Z" fill="#6ec1ea" opacity=".7"/>` +
+      [[60, 180], [76, 184], [92, 179], [70, 192], [86, 194]].map(([a, b]) => `<ellipse cx="${a}" cy="${b}" rx="6" ry="4" fill="#b0b0b0" ${st(1.2)}/>`).join("") +
+      person(372, 212, 1.35, {
+        head: "helmet", robe: "#7d7d7d", sleeve: "#9a9a9a", beard: "short", hair: "#2a1a10", mood: "angry", mouth: "shout", lh: [-30, -70], rh: [30, -150],
+        mid: `<path d="M30,-10 L30,-210" stroke="#7a4a1f" stroke-width="6"/>`
+      }, true) +
+      person(150, 194, 0.8, {
+        hairStyle: "curly", hair: "#8a3b12", robe: "#c97c3a", belt: "#7a4a1f", mood: "happy", mouth: "grin", look: 2, lh: [-26, -52], rh: [22, -160],
+        extra: `<path d="M22,-160 Q42,-192 8,-198 Q-16,-192 22,-160" fill="none" stroke="#7a4a1f" stroke-width="2.5"/><circle cx="4" cy="-196" r="5.5" fill="#9a9a9a" ${st(1.5)}/>` +
+          `<path d="M-18,-178 Q18,-224 58,-180" fill="none" stroke="${O}" stroke-width="2" stroke-dasharray="4 5" opacity=".5"/>`
+      })),
+
+    "Goliath": () => scene("#bcd6ea", "#f2f6f8",
+      hills("#c9b98a", 150) + ground("#b7a46a", 172) +
+      person(46, 196, 0.45, { robe: "#3d6e8c", hairStyle: "short", hair: "#3a2416", beard: "short", eyes: "wide", mouth: "open", mood: "worried", look: 2 }) +
+      person(96, 200, 0.45, { robe: "#6a8d3a", head: "headband", band: "#c1440e", hairStyle: "short", eyes: "wide", mouth: "small", mood: "worried", look: 2 }) +
+      `<path d="M-5,205 L-5,160 Q40,140 90,150 Q130,152 140,172 L140,205Z" fill="#a8a29a" ${st()}/>` +
+      person(256, 202, 1.15, {
+        head: "helmet", robe: "#7d7d7d", sleeve: "#9a9a9a", belt: "#5a5a5a", beard: "short", hair: "#2a1a10", mood: "angry", mouth: "shout", lh: [-46, -110], rh: [34, -120],
+        mid: `<path d="M34,-4 L34,-200" stroke="#7a4a1f" stroke-width="6"/><path d="M28,-196 L34,-214 L40,-196Z" fill="#b0b0b0" ${st(2)}/>`,
+        extra: ""
+      }) +
+      `<path d="M300,96 l14,-8 M302,108 l16,0 M300,120 l14,8" ${st(2.5)}/>`),
+
+    "Solomon": () => scene("#f6e2b3", "#d8a55a",
+      pillar(26, 24, 26, 140, "#f0d78c", "#c9a44a") + pillar(348, 24, 26, 140, "#f0d78c", "#c9a44a") +
+      `<rect x="112" y="56" width="176" height="106" fill="#e9c46a" ${st()}/><path d="M100,58 L200,22 L300,58Z" fill="#d4a017" ${st()}/><rect x="184" y="104" width="32" height="58" fill="#7a4a22" ${st(2)}/>` +
+      `<path d="M136,76 V150 M160,76 V150 M240,76 V150 M264,76 V150" stroke="#c9a44a" stroke-width="5"/>` + ground("#b07a3e", 170) +
+      person(200, 196, 0.95, { head: "crown", hairStyle: "short", hair: "#2a1a10", beard: "short", robe: "#3a5ba0", sleeve: "#4a6bb0", belt: "#e9c46a", mood: "happy", mouth: "smile", lh: [-24, -50], rh: [10, -100], look: -1, lookY: -2 }) +
+      [[150, 50], [250, 44], [262, 70]].map(([a, b]) => `<path d="M${a},${b - 8} L${a + 2},${b - 2} L${a + 8},${b} L${a + 2},${b + 2} L${a},${b + 8} L${a - 2},${b + 2} L${a - 8},${b} L${a - 2},${b - 2}Z" fill="#fff8d6"/>`).join("")),
+
+    "Daniel": () => scene("#2a1d14", "#5c4030",
+      `<ellipse cx="200" cy="-6" rx="90" ry="26" fill="#cfe8f5"/>` + rays(200, -20, 10, "#fff3c4", 0.14) +
+      `<circle cx="200" cy="118" r="72" fill="#fff4c2" opacity=".12"/>` + ground("#6b4a30", 172) +
+      lion(84, 192, 0.78) + lion(322, 192, 0.78, true) + zzz(72, 120) + zzz(316, 120) +
+      person(200, 194, 0.92, { kneel: true, head: "turban", turban: "#e9e4d0", beard: "short", hair: "#3a2416", robe: "#2f5d8a", mood: "happy", eyes: "closed", mouth: "smile", pose: "pray" })),
+
+    "Esther": () => scene("#f3d6e4", "#d9a6c0",
+      pillar(22, 24, 26, 140, "#f7e6ef", "#d8b4c6") + pillar(352, 24, 26, 140, "#f7e6ef", "#d8b4c6") +
+      `<path d="M60,14 Q130,60 200,14 Q270,60 340,14" fill="none" stroke="#9b2c5a" stroke-width="7"/>` +
+      `<rect x="282" y="84" width="66" height="92" rx="10" fill="#e9c46a" ${st()}/>` + ground("#b98aa8", 172) +
+      person(316, 190, 0.84, {
+        kneel: true, head: "crown", hairStyle: "short", hair: "#2a1a10", beard: "long", beardC: "#3a2416", robe: "#8e1b3a", mood: "happy", mouth: "smile", lh: [-20, -60], rh: [52, -104],
+        extra: `<path d="M52,-104 L80,-130" stroke="#e9c46a" stroke-width="5" stroke-linecap="round"/><circle cx="82" cy="-132" r="6" fill="#f4c430" ${st(1.5)}/>`
+      }, true) +
+      person(156, 194, 0.92, {
+        head: "veil", veil: "#8338ec", robe: "#7b2cbf", belt: "#e9c46a", skin: "#d79c6c", mood: "happy", mouth: "smile", look: 2, lh: [-24, -50], rh: [40, -88],
+        extra: `<path d="M-17,-152 L-17,-166 L-8,-158 L0,-172 L8,-158 L17,-166 L17,-152Z" fill="#f4c430" ${st(2)}/>`
+      })),
+
+    /* ---------- Level 2 ---------- */
+    "Abel": () => scene("#bfe6f5", "#f2fbff",
+      cloud(110, 30, 0.7) + hills("#a9cf86", 150) + ground("#8dbb5c", 170) +
+      `<path d="M305,140 q-8,-18 0,-34 q8,-16 0,-34 q-8,-18 0,-34" fill="none" stroke="#e6e6e6" stroke-width="9" stroke-linecap="round" opacity=".85"/>` +
+      altar(305, 174) + flame(305, 148, 0.7) + sheep(62, 188, 0.65) + sheep(104, 192, 0.6, true) +
+      person(200, 194, 0.92, { hairStyle: "short", hair: "#5a3a1a", beard: "short", robe: "#9c6b3c", belt: "#5a3a1a", mood: "happy", mouth: "smile", lh: [-20, -72], rh: [20, -72], look: 2, extra: sheep(4, -58, 0.62) })),
+
+    "Sarah": () => scene("#ffd8a8", "#fff3e0",
+      tree(70, 172, 1) + crowd([[40, 132], [102, 134]]) + ground("#e3c48a", 170) + tent(270, 172, 180, 112, "#b5895a") +
+      person(262, 196, 0.9, { head: "veil", veil: "#f4a261", robe: "#6d597a", old: true, mood: "happy", eyes: "closed", mouth: "grin", lh: [-30, -70], rh: [14, -100] }) +
+      txt(300, 64, 22, "ha ha!") + txt(330, 92, 15, "ha!")),
+
+    "Isaac": () => scene("#ffd9a8", "#fff3e0",
+      `<path d="M-5,205 L-5,160 Q120,150 250,84 L320,46 Q366,30 405,62 V205Z" fill="#c9a46e" ${st(2)}/>` +
+      `<path d="M30,205 Q140,170 260,110" fill="none" stroke="#e3c48a" stroke-width="16" stroke-linecap="round"/>` +
+      person(60, 200, 0.86, {
+        head: "turban", turban: "#e9e4d0", beard: "long", beardC: "#d6d6d6", old: true, robe: "#7a4a24", belt: "#e9c46a", mood: "neutral", mouth: "smile", look: 2,
+        lh: [-24, -50], rh: [30, -112], extra: `<path d="M30,-112 L30,-82" stroke="#7a4a1f" stroke-width="4"/>` + flame(30, -114, 0.55)
+      }) +
+      person(170, 194, 0.72, {
+        hairStyle: "curly", hair: "#3a2416", robe: "#e9c46a", belt: "#7a4a1f", mood: "happy", mouth: "smile", look: -2, lh: [-26, -116], rh: [26, -116],
+        under: `<g transform="rotate(-6)"><rect x="-42" y="-122" width="84" height="10" rx="4" fill="#8b5a2b" ${st(2)}/><rect x="-38" y="-112" width="76" height="10" rx="4" fill="#9c6b3c" ${st(2)}/><rect x="-44" y="-102" width="88" height="10" rx="4" fill="#7a4a22" ${st(2)}/></g>`
+      })),
+
+    "Joshua": () => scene("#ffd59e", "#fff3dd",
+      bricks(150, 66, 260, 104) +
+      Array.from({ length: 6 }, (_, i) => `<rect x="${150 + i * 46}" y="52" width="24" height="16" fill="#d8b98a" ${st(2)}/>`).join("") +
+      `<path d="M210,66 l10,22 l-8,16 l12,24 M330,70 l-8,20 l10,14 l-6,30" fill="none" stroke="${O}" stroke-width="3"/>` +
+      [[236, 40, 20], [300, 30, -30], [270, 18, 45]].map(([a, b, r]) => `<rect x="${a}" y="${b}" width="18" height="11" fill="#d8b98a" transform="rotate(${r} ${a} ${b})" ${st(2)}/>`).join("") +
+      cloud(380, 160, 0.7, "#e8d3a8") + ground("#c9a46a", 172) +
+      person(96, 194, 0.8, {
+        head: "turban", turban: "#f4f1e8", robe: "#f4efe3", beard: "short", hair: "#3a2416", mouth: "small", eyes: "closed", lh: [-40, -126], rh: [-20, -112],
+        extra: `<path d="M-4,-104 Q-30,-112 -48,-134 Q-54,-142 -62,-138 L-58,-126 Q-40,-104 -6,-96Z" fill="#e8d5a8" ${st(2)}/>`
+      }) +
+      person(222, 196, 0.95, {
+        head: "headband", band: "#1d4e89", hairStyle: "short", hair: "#3a2416", beard: "short", robe: "#556b2f", belt: "#c97c3a", mood: "happy", mouth: "shout", lh: [-24, -50], rh: [30, -160],
+        extra: `<path d="M30,-162 L30,-206" stroke="#cfd4da" stroke-width="6" stroke-linecap="round"/><path d="M20,-160 H40" ${st(4)}/>`
+      })),
+
+    "Ruth": () => scene("#ffe0a3", "#fff6e3",
+      hills("#e8c77a", 150) + crowd([[320, 120], [356, 124]], "#a8823e", 0.45) + ground("#e2b84a", 168) + stalks(0, 400, 172, 30) +
+      person(190, 196, 0.92, {
+        head: "veil", veil: "#e07a5f", robe: "#3d5a80", belt: "#e9c46a", skin: "#d79c6c", mood: "happy", mouth: "smile", look: -1, lh: [-16, -70], rh: [18, -74],
+        extra: Array.from({ length: 7 }, (_, i) => `<path d="M${-14 + i * 5},-38 L${-22 + i * 7},-112" stroke="#d9a93a" stroke-width="2.5"/><ellipse cx="${-22 + i * 7}" cy="-116" rx="3" ry="7" fill="#e9c46a" ${st(1)}/>`).join("") + `<path d="M-14,-70 H18" stroke="#7a4a1f" stroke-width="4"/>`
+      }) +
+      stalks(-6, 400, 205, 26, "#c99a2e")),
+
+    "Miriam": () => scene("#bfe6f5", "#eaf7fb",
+      `<rect x="-5" y="120" width="410" height="90" fill="#5fa8d3"/>` + waves(132, "#5fa8d3", 5, 34) +
+      reeds(240, 400, 150, 70) +
+      `<ellipse cx="226" cy="150" rx="34" ry="12" fill="#a0693a" ${st()}/><ellipse cx="226" cy="144" rx="26" ry="7" fill="#f5efe0" ${st(1.5)}/><circle cx="210" cy="140" r="8" fill="#e0a878" ${st(1.5)}/><path d="M206,140 q2,2 4,0 M212,140 q2,2 4,0" fill="none" ${st(1.2)}/>` +
+      `<path d="M-5,160 Q90,150 170,168 L170,205 H-5Z" fill="#c9a46a" ${st()}/>` +
+      person(110, 200, 0.74, { hairStyle: "long", hair: "#3a2416", robe: "#e76f51", belt: "#f4d35e", mood: "happy", mouth: "small", look: 2, lh: [-24, -50], rh: [6, -104] }) +
+      reeds(40, 180, 205, 90)),
+
+    "Gideon": () => scene("#121a33", "#2c3a5e",
+      stars(22, 60) + `<path d="M-5,150 Q100,110 200,140 Q300,112 405,138 V205 H-5Z" fill="#1d2a3a"/>` +
+      [30, 70, 110, 150, 250, 290, 330, 370].map((a, i) => flame(a, 132 - (i % 3) * 6, 0.3)).join("") +
+      ground("#2a2f24", 172) +
+      `<circle cx="234" cy="46" r="40" fill="#ffd166" opacity=".18"/>` +
+      `<path d="M120,184 l12,-8 l8,8Z M146,188 l10,-4 l4,8Z M108,192 l8,-6 l6,6Z" fill="#b5653a" ${st(1.5)}/>` +
+      person(190, 196, 0.95, {
+        head: "headband", band: "#c1440e", hairStyle: "short", hair: "#3a2416", beard: "short", robe: "#b56b45", belt: "#5a3a1a", mood: "angry", eyes: "closed", mouth: "small",
+        lh: [-16, -110], rh: [46, -150],
+        extra: `<path d="M-2,-102 Q-26,-112 -44,-134 Q-50,-142 -58,-138 L-54,-126 Q-36,-106 -4,-96Z" fill="#e8d5a8" ${st(2)}/><path d="M46,-150 L46,-118" stroke="#7a4a1f" stroke-width="5"/>` + flame(46, -150, 0.85)
+      })),
+
+    "Samuel": () => scene("#1a2240", "#2d3a66",
+      `<rect x="40" y="30" width="60" height="44" fill="#0f1630" ${st(2)}/>` + `<circle cx="80" cy="46" r="9" fill="#fdf3c4"/>` +
+      `<circle cx="318" cy="96" r="46" fill="#ffd166" opacity=".16"/><rect x="314" y="104" width="7" height="68" fill="#c9a44a" ${st(1.5)}/>` + flame(318, 104, 0.45) +
+      ground("#3a2c22", 174) +
+      `<path d="M130,40 q10,10 0,20 M142,32 q16,18 0,36" fill="none" stroke="#fff8d6" stroke-width="2.5" stroke-linecap="round"/>` +
+      `<rect x="100" y="150" width="200" height="22" rx="6" fill="#7a4a22" ${st()}/>` +
+      person(176, 186, 0.8, { kneel: true, hairStyle: "short", hair: "#3a2416", robe: "#f1e3c0", eyes: "wide", mouth: "open", mood: "worried", lh: [-24, -66], rh: [-28, -118], look: -2, lookY: -1 }) +
+      `<path d="M150,152 Q220,132 296,152 L296,170 L150,170Z" fill="#3f6fb0" ${st()}/>`),
+
+    "Elijah": () => scene("#ffd27a", "#fff2d6",
+      rays(240, -30, 16, "#ffffff", 0.3) + hills("#b8a07a", 150) + ground("#a88a5a", 172) +
+      `<path d="M220,-5 L262,-5 L252,128 L230,128Z" fill="#ffb703" opacity=".75"/>` +
+      `<ellipse cx="242" cy="182" rx="56" ry="9" fill="#5fa8d3" ${st(2)}/>` + altar(242, 176, 76) +
+      `<path d="M210,148 H274 M214,142 H270" stroke="#7a4a22" stroke-width="6"/>` + flame(242, 150, 1.9) +
+      person(352, 194, 0.5, { robe: "#8e5572", head: "turban", turban: "#5a3a1a", beard: "short", eyes: "wide", mouth: "shout", mood: "worried" }, true) +
+      person(110, 196, 0.92, { hairStyle: "bald", hair: "#bdbdbd", beard: "long", beardC: "#c9c9c9", old: true, robe: "#7a5c3a", belt: "#5a3a1a", mood: "happy", mouth: "grin", pose: "up", look: 2, lookY: -2 })),
+
+    "Jeremiah": () => scene("#4a3a2c", "#2a2018",
+      `<ellipse cx="200" cy="-8" rx="130" ry="40" fill="#bfe3f2"/>` + bricks(-5, 30, 70, 150, "#5a4636", "#43342a") + bricks(335, 30, 70, 150, "#5a4636", "#43342a") +
+      person(200, 4, 0.36, { head: "turban", turban: "#e9c46a", beard: "short", hair: "#2a1a10", mood: "worried", mouth: "open", lookY: 3 }) +
+      `<path d="M170,0 L172,118 M232,0 L228,118" stroke="#c9a46a" stroke-width="4"/>` +
+      person(200, 244, 0.95, { head: "turban", turban: "#d9cbb0", beard: "short", hair: "#3a2416", robe: "#8a6a45", mood: "happy", mouth: "grin", lh: [-30, -132], rh: [30, -132], lookY: -3 }) +
+      `<path d="M-5,168 Q100,158 200,168 T405,164 V205 H-5Z" fill="#5a3d24" ${st()}/>` +
+      [[120, 180], [270, 186], [200, 196], [60, 190], [340, 178]].map(([a, b]) => `<ellipse cx="${a}" cy="${b}" rx="12" ry="5" fill="#3f2a18"/>`).join("")),
+
+    "John the Baptist": () => scene("#ffd9a0", "#fff2dc",
+      hills("#e3c48a", 150) + `<path d="M-5,156 Q200,146 405,158 V174 Q200,164 -5,174Z" fill="#5fa8d3" ${st(2)}/>` + ground("#d8b878", 178) +
+      locust(310, 186, 1) + locust(70, 70, 0.9, true) + locust(340, 54, 0.7) +
+      person(196, 200, 0.95, {
+        hairStyle: "curlyLong", hair: "#3a2416", beard: "long", robe: "#a0703c", sleeve: "#a0703c", belt: "#4a2c14", mood: "happy", mouth: "grin", lh: [-24, -50], rh: [34, -96],
+        mid: `<path d="M-24,-80 l-4,8 M-18,-40 l-5,7 M20,-30 l4,7 M14,-74 l5,6 M0,-20 l0,8" stroke="#6b4626" stroke-width="2"/>`,
+        extra: honeycomb(40, -100, 0.9)
+      })),
+
+    /* ---------- Level 3 ---------- */
+    "Enoch": () => scene("#ffd6a5", "#fdf0dd",
+      `<circle cx="70" cy="46" r="22" fill="#ffe29a"/>` + hills("#d9b27a", 152) + ground("#c9a46a", 172) +
+      person(268, 196, 0.58, { robe: "#6b4a5a", head: "turban", turban: "#4a3a2a", beard: "short", mood: "angry", mouth: "frown", look: -2, lh: [-8, -76], rh: [8, -76] }, true) +
+      person(312, 198, 0.6, { robe: "#4a5a6b", hairStyle: "short", beard: "short", mood: "angry", mouth: "flat", look: -2, lh: [-8, -76], rh: [8, -76] }, true) +
+      person(356, 196, 0.56, { robe: "#7a5a3a", head: "veil", veil: "#5a4a6a", mood: "angry", mouth: "frown", look: -2, lh: [-8, -76], rh: [8, -76] }, true) +
+      person(148, 196, 0.92, { hairStyle: "bald", hair: "#e0e0e0", beard: "long", beardC: "#f2f2f2", old: true, robe: "#5a7d9a", belt: "#e9c46a", mood: "neutral", mouth: "open", lh: [-30, -80], rh: [36, -160], look: 2, mid: staff(-30) })),
+
+    "Rebekah": () => scene("#ffd9a0", "#fff3e0",
+      palm(372, 170, 0.8) + ground("#e3c48a", 168) +
+      `<rect x="20" y="146" width="80" height="32" fill="#b8a98e" ${st()}/><ellipse cx="60" cy="146" rx="40" ry="9" fill="#2a3a4a" ${st()}/><path d="M26,146 V102 M94,146 V102 M20,102 H100" ${st(4)}/>` +
+      `<rect x="156" y="166" width="96" height="14" fill="#8b5a2b" ${st(2)}/><rect x="160" y="166" width="88" height="5" fill="#6ec1ea"/>` +
+      camelC(350, 190, 0.66, true) + camelC(300, 192, 0.72, true) +
+      person(134, 196, 0.9, {
+        head: "veil", veil: "#f4a261", robe: "#2a9d8f", belt: "#f4d35e", skin: "#d79c6c", mood: "happy", mouth: "grin", look: 2, lh: [26, -82], rh: [52, -98],
+        extra: `<path d="M34,-118 Q24,-96 40,-82 L64,-82 Q80,-96 68,-118 L62,-124 L42,-124Z" fill="#c4683a" transform="rotate(40 52 -100)" ${st(2)}/><path d="M74,-80 Q80,-50 82,-30" fill="none" stroke="#6ec1ea" stroke-width="5" stroke-linecap="round"/>`
+      }) + txt(330, 66, 22, "×10!")),
+
+    "Caleb": () => scene("#cfe8c9", "#f5f9ec",
+      hills("#9fd38a", 150) + ground("#86b45a", 170) +
+      person(122, 198, 0.9, { head: "turban", turban: "#b5651d", beard: "short", hair: "#3a2416", robe: "#556b2f", belt: "#e9c46a", mood: "happy", mouth: "smile", look: 2, lh: [-24, -50], rh: [20, -106] }) +
+      person(292, 198, 0.9, { head: "headband", band: "#2a9d8f", hairStyle: "short", hair: "#4a2c17", beard: "short", robe: "#c97c3a", belt: "#5a3a1a", mood: "happy", mouth: "grin", look: -2, lh: [-20, -106], rh: [24, -50] }) +
+      `<path d="M96,104 L320,104" stroke="${O}" stroke-width="9" stroke-linecap="round"/><path d="M96,104 L320,104" stroke="#9c6b3c" stroke-width="5" stroke-linecap="round"/>` +
+      grapes(208, 140, 1.5) +
+      `<circle cx="160" cy="184" r="8" fill="#c1121f" ${st(1.5)}/><circle cx="176" cy="188" r="8" fill="#c1121f" ${st(1.5)}/><ellipse cx="248" cy="186" rx="7" ry="9" fill="#7b4a8a" ${st(1.5)}/>`),
+
+    "Balaam": () => scene("#bfe3f2", "#f6efdc",
+      bricks(-5, 110, 90, 60, "#c8b28a", "#a8926a") + bricks(320, 110, 90, 60, "#c8b28a", "#a8926a") + ground("#d8b878", 170) +
+      `<circle cx="338" cy="104" r="56" fill="#fff4c2" opacity=".55"/>` +
+      person(338, 192, 0.82, {
+        robe: "#fffbe8", sleeve: "#fffbe8", skin: "#f2d6b0", hairStyle: "short", hair: "#f4d35e", mood: "neutral", mouth: "flat", lh: [-24, -50], rh: [40, -150],
+        extra: `<path d="M40,-150 L40,-200" stroke="#cfd4da" stroke-width="6" stroke-linecap="round"/><path d="M30,-150 H50" ${st(4)}/>`
+      }, true) +
+      person(150, 148, 0.7, { head: "turban", turban: "#7a5c3a", beard: "long", beardC: "#9a9a9a", robe: "#8e5572", belt: "#e9c46a", eyes: "wide", mouth: "shout", mood: "worried", lh: [-30, -80], rh: [36, -86], look: 2 }) +
+      donkeyBody(150, 192, 0.95) + bubble(268, 50, "Why?!")),
+
+    "Deborah": () => scene("#ffe0b0", "#fff5e4",
+      hills("#c8d68a", 150) + `<path d="M232,152 Q300,64 372,152Z" fill="#9cb25a" ${st(2)}/>` + palm(54, 172, 0.9) + ground("#a8c66c", 172) +
+      person(158, 196, 0.92, { head: "veil", veil: "#d4a017", robe: "#2a9d8f", belt: "#c1440e", mood: "happy", mouth: "open", pose: "pointR", rh: [60, -112], look: 2 }) +
+      person(276, 198, 0.92, {
+        head: "headband", band: "#c1440e", hairStyle: "short", hair: "#2a1a10", beard: "short", robe: "#7a4a24", belt: "#3a2414", mood: "worried", eyes: "wide", mouth: "small", look: 2, lh: [-24, -50], rh: [20, -76],
+        extra: `<path d="M-30,-60 L-50,-10" stroke="#cfd4da" stroke-width="5" stroke-linecap="round"/>`
+      }, true)),
+
+    "Jael": () => scene("#ffd9a8", "#fff3e0",
+      cloud(60, 120, 0.7, "#e8d3a8") + cloud(110, 132, 0.5, "#e8d3a8") + ground("#c9a46a", 172) + tent(286, 174, 210, 134, "#8b6a4a") +
+      person(176, 196, 0.92, {
+        head: "veil", veil: "#6d597a", robe: "#e9c46a", belt: "#7a4a24", mood: "neutral", mouth: "smile", look: 2, lh: [-28, -70], rh: [30, -80],
+        extra: `<path d="M18,-94 L52,-94 L54,-46 L20,-52Z" fill="#c1440e" ${st(2)}/><path d="M20,-80 L53,-80 M21,-66 L54,-66" stroke="#f4d35e" stroke-width="3"/>`
+      })),
+
+    "Jephthah": () => scene("#bfe3f2", "#f6efdc",
+      `<rect x="214" y="78" width="150" height="96" fill="#e3c08f" ${st()}/><rect x="208" y="70" width="162" height="10" fill="#a0693a" ${st(2)}/><rect x="248" y="108" width="50" height="66" fill="#5a3a1a" ${st(2)}/>` +
+      ground("#b9c46a", 174) +
+      person(272, 198, 0.74, {
+        head: "veil", veil: "#ff99c8", robe: "#ffd166", belt: "#c1440e", mood: "happy", mouth: "grin", eyes: "closed", lh: [-38, -146], rh: [38, -156],
+        extra: tamb(46, -164)
+      }) +
+      person(126, 198, 0.95, { head: "headband", band: "#1d4e89", hairStyle: "short", hair: "#3a2416", beard: "short", robe: "#6b4a2b", belt: "#3a2414", mood: "worried", eyes: "wide", mouth: "open", lh: [-20, -126], rh: [20, -126], look: 2 })),
+
+    "Abigail": () => scene("#ffe0b0", "#fff5e4",
+      `<path d="M-5,152 L60,62 L150,152Z" fill="#b8865a" ${st(2)}/>` + hills("#d9b27a", 156) + ground("#c9a46a", 172) +
+      donkeyBody(140, 192, 0.9) +
+      `<rect x="98" y="122" width="26" height="24" rx="4" fill="#c9a46a" ${st(2)}/><rect x="128" y="120" width="26" height="26" rx="4" fill="#b8865a" ${st(2)}/>` +
+      `<ellipse cx="111" cy="120" rx="11" ry="6" fill="#e9c46a" ${st(1.5)}/><ellipse cx="141" cy="118" rx="11" ry="6" fill="#d9a066" ${st(1.5)}/>` +
+      person(286, 196, 0.92, {
+        head: "veil", veil: "#e63946", robe: "#f4a261", belt: "#2a9d8f", skin: "#d79c6c", mood: "happy", mouth: "smile", look: -2, lh: [-32, -80], rh: [24, -60],
+        extra: `<ellipse cx="-34" cy="-88" rx="14" ry="8" fill="#e9c46a" ${st(1.5)}/><path d="M-42,-90 l4,-3 M-34,-92 l4,-3 M-26,-90 l4,-3" ${st(1.2)}/>`
+      })),
+
+    "Nathan": () => scene("#f3dca6", "#d8a55a",
+      pillar(24, 24, 26, 140, "#ecdcb0") + `<rect x="276" y="82" width="70" height="94" rx="10" fill="#e9c46a" ${st()}/>` + ground("#b07a3e", 172) +
+      person(306, 190, 0.86, { kneel: true, head: "crown", hairStyle: "short", hair: "#8a3b12", beard: "short", beardC: "#8a3b12", robe: "#8e1b3a", eyes: "wide", mouth: "open", mood: "worried", lh: [-8, -82], rh: [8, -84] }, true) +
+      person(146, 196, 0.92, {
+        head: "turban", turban: "#e9e4d0", beard: "long", beardC: "#cfcfcf", old: true, robe: "#4b6584", belt: "#e9c46a", mood: "neutral", mouth: "open", look: 2, lh: [-16, -66], rh: [62, -108],
+        extra: sheep(-10, -54, 0.5)
+      })),
+
+    "Mephibosheth": () => scene("#f3dca6", "#e2b26e",
+      pillar(22, 24, 26, 140, "#ecdcb0") + pillar(352, 24, 26, 140, "#ecdcb0") + `<rect x="150" y="34" width="100" height="70" fill="#9fd3ef" ${st()}/>` +
+      ground("#b07a3e", 176) +
+      person(160, 216, 0.88, { hairStyle: "short", hair: "#5a3a1a", beard: "short", robe: "#2a9d8f", mood: "happy", mouth: "grin", lh: [-24, -96], rh: [28, -126], look: 2, extra: `<path d="M20,-140 L36,-140 L33,-118 L23,-118Z" fill="#e9c46a" ${st(1.5)}/>` }) +
+      person(292, 216, 0.88, { head: "crown", hairStyle: "short", hair: "#8a3b12", beard: "short", beardC: "#8a3b12", robe: "#8e1b3a", mood: "happy", mouth: "smile", lh: [-28, -96], rh: [46, -104], look: 2 }, true) +
+      `<rect x="96" y="150" width="250" height="14" fill="#8b5a2b" ${st(2)}/><path d="M110,164 V196 M332,164 V196" ${st(5)}/>` +
+      `<ellipse cx="200" cy="146" rx="20" ry="7" fill="#d9a066" ${st(1.5)}/><ellipse cx="240" cy="146" rx="13" ry="6" fill="#c1440e" ${st(1.5)}/>` + grapes(276, 136, 0.45) +
+      `<path d="M74,150 L90,198 M66,152 L84,148" stroke="#7a4a1f" stroke-width="5" stroke-linecap="round"/>`),
+
+    "Elisha": () => scene("#ffe2b0", "#fff3dd",
+      `<path d="M-5,150 Q60,88 140,128 Q210,78 280,126 Q340,90 405,118 V205 H-5Z" fill="#c9a46e" ${st(2)}/>` +
+      fireChariot(56, 116, 0.9) + fireChariot(160, 106, 0.9) + fireChariot(250, 104, 0.9) + fireChariot(344, 108, 0.9) +
+      ground("#b9935e", 174) +
+      person(272, 198, 0.72, { robe: "#e9c46a", hairStyle: "short", hair: "#2a1a10", eyes: "wide", mouth: "shout", mood: "worried", lh: [-22, -128], rh: [22, -128], lookY: -3 }, true) +
+      person(148, 198, 0.9, { hairStyle: "bald", hair: "#3a2416", beard: "long", beardC: "#4a3a2a", robe: "#6b4a5a", belt: "#e9c46a", mood: "happy", mouth: "smile", pose: "upR", look: 2, lookY: -2 })),
+
+    "Naaman": () => scene("#bfe6f5", "#eaf7fb",
+      hills("#a9cf86", 140) + waves(144, "#4a90c8", 6, 36) +
+      `<path d="M-5,148 Q60,140 116,158 L116,205 H-5Z" fill="#c9a46a" ${st()}/>` +
+      `<path d="M14,170 v-14 M22,170 v-14 M30,170 v-14 M38,170 v-14 M10,166 L42,158 M52,170 v-14 M60,170 v-14" ${st(2.5)}/>` +
+      `<path d="M66,176 Q66,152 84,152 Q102,152 102,176Z" fill="#a7adb5" ${st(2)}/>` +
+      person(240, 242, 0.95, { hairStyle: "short", hair: "#2a1a10", beard: "short", robe: "#e8e1d0", mood: "happy", eyes: "closed", mouth: "grin", pose: "up" }) +
+      waves(172, "#5fa8d3", 8, 50) +
+      [[200, 150], [282, 146], [212, 136], [270, 132], [240, 128]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="3.5" fill="#e6f4ff" ${st(1.2)}/>`).join("")),
+
+    "Jehoiada": () => scene("#e9d8b4", "#c9a46e",
+      `<rect x="-5" y="20" width="410" height="150" fill="#7a3b46"/>` + pillar(26, 30, 24, 134) + pillar(350, 30, 24, 134) +
+      crowd([[86, 120], [316, 118]], "#5a3a2a", 0.5) +
+      `<path d="M74,100 L74,170 M330,98 L330,168" stroke="#5a3a2a" stroke-width="3" opacity=".5"/>` + ground("#a87a48", 172) +
+      person(166, 196, 0.95, { head: "turban", turban: "#f4f1e8", beard: "long", beardC: "#e5e5e5", old: true, robe: "#3a5ba0", belt: "#e9c46a", mood: "happy", mouth: "grin", pose: "pointR", rh: [56, -96], look: 2 }) +
+      person(256, 196, 0.55, { head: "crown", hairStyle: "curly", hair: "#3a2416", robe: "#8e1b3a", belt: "#e9c46a", mood: "happy", mouth: "grin", pose: "up" })),
+
+    "Manasseh": () => scene("#4a4038", "#2a2420",
+      `<rect x="160" y="26" width="80" height="46" fill="#bfe3f2" ${st(2)}/><path d="M180,26 V72 M200,26 V72 M220,26 V72" stroke="${O}" stroke-width="4"/>` +
+      `<path d="M168,72 L236,72 L282,176 L120,176Z" fill="#fff4c2" opacity=".12"/>` +
+      Array.from({ length: 8 }, (_, i) => `<rect x="${i < 4 ? 10 + i * 26 : 266 + (i - 4) * 26}" y="0" width="8" height="176" fill="#6b6b6b" ${st(1.5)}/>`).join("") +
+      ground("#3a3028", 174) +
+      `<g transform="translate(300,182) rotate(-24)"><path d="M-16,0 L-16,-14 L-8,-7 L0,-18 L8,-7 L16,-14 L16,0Z" fill="#f4c430" ${st(2)}/></g>` +
+      person(190, 194, 0.92, {
+        kneel: true, hairStyle: "short", hair: "#2a1a10", beard: "short", robe: "#6b2f8a", sleeve: "#7d3ba0", mood: "worried", eyes: "closed", mouth: "flat", pose: "pray",
+        extra: `<path d="M-8,-74 Q-40,-40 -76,-38" fill="none" stroke="#9a9a9a" stroke-width="3.5" stroke-dasharray="6 3"/><rect x="-12" y="-76" width="24" height="7" rx="3" fill="#9a9a9a" ${st(1.5)}/>`
+      })),
+
+    "Josiah": () => scene("#f6e2b3", "#d8a55a",
+      pillar(22, 24, 26, 140, "#f0d78c", "#c9a44a") + pillar(352, 24, 26, 140, "#f0d78c", "#c9a44a") +
+      `<path d="M90,40 V160 M150,40 V160 M90,70 H150 M90,110 H150" stroke="#8b5a2b" stroke-width="5"/>` + crowd([[120, 96]], "#8b5a2b", 0.4) +
+      ground("#b07a3e", 172) +
+      person(296, 196, 0.86, { head: "turban", turban: "#f4f1e8", beard: "long", beardC: "#e0e0e0", old: true, robe: "#f4efe3", belt: "#3a5ba0", mood: "happy", mouth: "smile", pose: "pointR", rh: [56, -84], look: 2 }, true) +
+      person(196, 196, 0.84, { head: "crown", hairStyle: "short", hair: "#3a2416", robe: "#3a5ba0", belt: "#e9c46a", mood: "happy", eyes: "wide", mouth: "grin", lh: [-20, -70], rh: [20, -70], lookY: 3, extra: scrollHeld })),
+
+    "Nehemiah": () => scene("#bfe3f2", "#f6efdc",
+      bricks(-5, 70, 120, 100) + bricks(115, 110, 110, 60) + bricks(225, 90, 185, 80) +
+      `<path d="M150,110 V40 M200,110 V40 M140,60 H210" stroke="#8b5a2b" stroke-width="5"/>` +
+      crowd([[46, 50], [300, 64]], "#7a5a3a", 0.45) + ground("#c9a46a", 172) +
+      `<rect x="250" y="160" width="26" height="16" fill="#d8b98a" ${st(2)}/><rect x="270" y="168" width="26" height="16" fill="#d8b98a" ${st(2)}/><rect x="258" y="176" width="26" height="16" fill="#d8b98a" ${st(2)}/>` +
+      person(170, 196, 0.92, {
+        head: "turban", turban: "#2a9d8f", beard: "short", hair: "#3a2416", robe: "#7a4a24", belt: "#e9c46a", mood: "happy", mouth: "grin", look: 2, lh: [-24, -50], rh: [40, -96],
+        extra: `<rect x="32" y="-112" width="26" height="15" fill="#d8b98a" ${st(2)}/>`
+      })),
+
+    "Stephen": () => scene("#3a3550", "#6a5d8a",
+      rays(200, -40, 14, "#fff4c2", 0.22) +
+      crowd([[40, 116], [84, 108], [316, 108], [360, 116]], "#241f33", 0.75) +
+      `<path d="M30,100 l-8,-18 M94,92 l8,-18 M306,92 l-8,-18 M370,100 l8,-18" stroke="#241f33" stroke-width="6" stroke-linecap="round" opacity=".75"/>` +
+      ground("#4a4060", 174) + `<circle cx="200" cy="108" r="64" fill="#fff4c2" opacity=".22"/>` +
+      person(200, 196, 0.95, { hairStyle: "short", hair: "#3a2416", beard: "short", robe: "#f1e3c0", belt: "#7a4a24", skin: "#d9a06e", mood: "happy", mouth: "smile", lookY: -3, lh: [-24, -50], rh: [30, -140] }))
+  });
 
   return name => (S[name] ? S[name]() : "");
 })();
 
-const CHARACTERS = [
-  { character: "Joseph",    clue: "Fled when his master’s wife tried to tempt him",            distractors: ["Potiphar", "Reuben"] },
-  { character: "Jeremiah",  clue: "Wore wooden yoke bars as a warning to the nations",          distractors: ["Isaiah", "Hezekiah"] },
-  { character: "Samuel",    clue: "Called on Jehovah, who sent thunder and rain at harvest",    distractors: ["Isaiah", "Aaron"] },
-  { character: "Jonah",     clue: "Ran from his assignment and ended up inside a great fish",   distractors: ["Peter", "Jeremiah"] },
-  { character: "Noah",      clue: "Brought the animals into the ark",                           distractors: ["Lot", "Job"] },
-  { character: "Paul",      clue: "Carried off by soldiers to escape an angry mob",             distractors: ["Peter", "Timothy"] },
-  { character: "Samson",    clue: "Pushed apart the pillars of a temple",                       distractors: ["Gideon", "Manoah"] },
-  { character: "Jonathan",  clue: "A king’s son and a loyal friend to the future king",         distractors: ["Reuben", "Gideon"] },
-  { character: "Mary",      clue: "Laid her firstborn son in a manger",                         distractors: ["Hannah", "Naomi"] },
-  { character: "Hezekiah",  clue: "King who prayed when the Assyrians threatened Jerusalem",     distractors: ["Isaiah", "King Saul"] },
-  { character: "Job",       clue: "Lost everything, yet kept his integrity",                    distractors: ["Noah", "Jacob"] },
-  { character: "Timothy",   clue: "Taught the Scriptures from infancy by his mother and grandmother", distractors: ["Paul", "Samuel"] },
-  { character: "Isaiah",    clue: "Prophet who answered, “Here I am! Send me!”",                distractors: ["Jeremiah", "Samuel"] },
-  { character: "Peter",     clue: "Began to sink while walking on the water",                   distractors: ["Paul", "Jonah"] },
-  { character: "Pharaoh",   clue: "Refused to let the Israelites go, even after the plagues",   distractors: ["Potiphar", "Korah"] },
-  { character: "Aaron",     clue: "His rod budded, blossomed and grew almonds overnight",       distractors: ["Korah", "Gideon"] },
-  { character: "Miriam",    clue: "Led the women in song after the Red Sea crossing",           distractors: ["Zipporah", "Hannah"] },
-  { character: "Jacob",     clue: "Wrestled with an angel to receive a blessing",               distractors: ["Esau", "Reuben"] },
-  { character: "Potiphar",  clue: "Egyptian court officer who bought a young Hebrew slave",     distractors: ["Pharaoh", "Joseph"] },
-  { character: "Reuben",    clue: "Firstborn son who tried to rescue his brother from a pit",   distractors: ["Joseph", "Esau"] },
-  { character: "Lot",       clue: "Fled Sodom, but his wife looked back",                       distractors: ["Noah", "Jacob"] },
-  { character: "Esau",      clue: "Traded his birthright for a bowl of stew",                   distractors: ["Jacob", "Reuben"] },
-  { character: "King Saul", clue: "Israel’s first king, head and shoulders above the rest",     distractors: ["Jonathan", "Hezekiah"] },
-  { character: "Hannah",    clue: "Prayed so earnestly the priest thought she was drunk",       distractors: ["Naomi", "Mary"] },
-  { character: "Manoah",    clue: "Asked the angel his name, then watched him rise in the flame", distractors: ["Samson", "Gideon"] },
-  { character: "Gideon",    clue: "Tested God with a woollen fleece",                           distractors: ["Samson", "King Saul"] },
-  { character: "Naomi",     clue: "Came home to Bethlehem with her loyal daughter-in-law",      distractors: ["Rahab", "Hannah"] },
-  { character: "Rahab",     clue: "Hid two spies under stalks of flax on her roof",             distractors: ["Miriam", "Zipporah"] },
-  { character: "Korah",     clue: "Rebelled against Moses, and the ground opened up",           distractors: ["Aaron", "Potiphar"] },
-  { character: "Zipporah",  clue: "Daughter of a Midianite priest who married Moses",           distractors: ["Miriam", "Rahab"] }
+/* Clues written in our own words from "Lessons You Can Learn From the Bible" and "Walk Courageously With God" (jw.org). */
+const LEVELS = [
+  { n: 1, name: "Beginner", blurb: "Picture and clue, 3 choices" },
+  { n: 2, name: "Explorer", blurb: "Trickier clues, 4 choices" },
+  { n: 3, name: "Expert", blurb: "Picture hidden until you answer, 4 choices" }
 ];
 
-const ROUND = 10;
+const CHARACTERS = [
+  /* ---------- Level 1: Beginner ---------- */
+  { level: 1, character: "Adam", clue: "The very first man, made from dust and asked to name all the animals", ref: "Genesis 2:7, 19, 20", fun: "Imagine thinking up a name for every animal – even the hippopotamus!", distractors: ["Noah", "Abraham"] },
+  { level: 1, character: "Eve", clue: "The first woman, who listened to a talking snake in the garden", ref: "Genesis 3:1-6", fun: "Top tip: if a snake starts chatting to you, walk away!", distractors: ["Mary", "Esther"] },
+  { level: 1, character: "Noah", clue: "Built an enormous ark and brought the animals inside before the Flood", ref: "Genesis 6:13-22", fun: "Two of every kind… imagine the noise at feeding time!", distractors: ["Moses", "Abraham"] },
+  { level: 1, character: "Abraham", clue: "Left the city of Ur because Jehovah told him to move to a new land", ref: "Hebrews 11:8", fun: "No map and no sat-nav – just faith in Jehovah!", distractors: ["Jacob", "Noah"] },
+  { level: 1, character: "Jacob", clue: "Wrestled with an angel all night and wouldn’t give up", ref: "Genesis 32:24-30", fun: "Held on till morning – talk about determination!", distractors: ["Joseph", "Samson"] },
+  { level: 1, character: "Joseph", clue: "Ran away when his master’s wife tried to get him to do wrong", ref: "Genesis 39:7-12", fun: "Sometimes the bravest thing you can do is run – fast!", distractors: ["Moses", "David"] },
+  { level: 1, character: "Moses", clue: "Saw a bush on fire that didn’t burn up, and was told to take off his sandals", ref: "Exodus 3:1-6", fun: "Holy ground – so off came the sandals!", distractors: ["Noah", "Solomon"] },
+  { level: 1, character: "Pharaoh", clue: "Egypt’s king, who kept refusing to let Jehovah’s people go", ref: "Exodus 5:1, 2", fun: "Plague after plague – and frogs everywhere!", distractors: ["Goliath", "King Saul"] },
+  { level: 1, character: "Samson", clue: "Jehovah made him so strong that he pushed down the pillars of a temple", ref: "Judges 16:28-30", fun: "His strength didn’t come from the gym – it came from Jehovah!", distractors: ["David", "Goliath"] },
+  { level: 1, character: "King Saul", clue: "Israel’s first king, who was taller than everyone else", ref: "1 Samuel 10:23, 24", fun: "Head and shoulders above the rest – handy in a crowd!", distractors: ["David", "Solomon"] },
+  { level: 1, character: "David", clue: "A shepherd boy who faced a giant with a sling and five smooth stones", ref: "1 Samuel 17:40-50", fun: "He packed five stones – but he only needed one!", distractors: ["Samson", "Joseph"] },
+  { level: 1, character: "Goliath", clue: "A giant Philistine warrior who mocked Israel’s army day after day", ref: "1 Samuel 17:4-10", fun: "All that shouting – and a shepherd boy won the day!", distractors: ["Pharaoh", "Samson"] },
+  { level: 1, character: "Solomon", clue: "Jehovah gave him great wisdom and the job of building the temple", ref: "1 Kings 3:9-12; 6:1", fun: "Wise enough to ask for wisdom – clever, eh?", distractors: ["David", "King Saul"] },
+  { level: 1, character: "Jonah", clue: "Ran away from his assignment and ended up inside a huge fish", ref: "Jonah 1:3, 17", fun: "Three days in a fish – and you think your bedroom smells!", distractors: ["Peter", "Noah"] },
+  { level: 1, character: "Daniel", clue: "Thrown into a pit of lions, but an angel shut their mouths", ref: "Daniel 6:16-22", fun: "The lions had an early night – Daniel was safe and sound!", distractors: ["Joseph", "David"] },
+  { level: 1, character: "Esther", clue: "Chosen to be queen, then bravely saved her people", ref: "Esther 2:17; 7:3-6", fun: "From ordinary girl to queen – and a real-life hero!", distractors: ["Mary", "Eve"] },
+  { level: 1, character: "Job", clue: "Lost almost everything and was covered in painful sores, but stayed loyal to Jehovah", ref: "Job 2:7-10; James 5:11", fun: "Patience level: legendary!", distractors: ["Noah", "Abraham"] },
+  { level: 1, character: "Mary", clue: "Wrapped her newborn son in cloths and laid him in a manger", ref: "Luke 2:7", fun: "A manger is an animal feeding trough – the donkey had to share!", distractors: ["Esther", "Eve"] },
+  { level: 1, character: "Peter", clue: "Walked on the water towards Jesus, then started to sink", ref: "Matthew 14:28-31", fun: "Rule one of walking on water: don’t look at the waves!", distractors: ["Paul", "Jonah"] },
+  { level: 1, character: "Paul", clue: "Arrested in Jerusalem, then sent to Rome by ship – and shipwrecked on the way!", ref: "Acts 21:30-33; 27:1, 41-44", fun: "A 14-day storm – not exactly a relaxing cruise!", distractors: ["Peter", "Jonah"] },
 
-/* ---------- Sound (Web Audio, unlocked on first tap) ---------- */
+  /* ---------- Level 2: Explorer ---------- */
+  { level: 2, character: "Abel", clue: "A shepherd who gave Jehovah an offering from his flock", ref: "Genesis 4:2-4; Hebrews 11:4", fun: "His big brother Cain was a farmer – sadly, they didn’t get on.", distractors: ["Isaac", "Lot", "Esau"] },
+  { level: 2, character: "Sarah", clue: "Laughed with joy when she learned she’d have a son in her old age", ref: "Genesis 21:1-7", fun: "Her son’s name, Isaac, means ‘Laughter’!", distractors: ["Rebekah", "Hannah", "Naomi"] },
+  { level: 2, character: "Isaac", clue: "Carried the firewood up the mountain when his father’s faith was tested", ref: "Genesis 22:6-8", fun: "He asked: ‘Where is the lamb?’ – and Jehovah provided!", distractors: ["Abel", "Esau", "Lot"] },
+  { level: 2, character: "Esau", clue: "Swapped his inheritance for a bowl of red stew", ref: "Genesis 25:29-34", fun: "The most expensive bowl of soup in history!", distractors: ["Jacob", "Isaac", "Abel"] },
+  { level: 2, character: "Lot", clue: "Escaped from Sodom with his daughters, but his wife looked back", ref: "Genesis 19:15-26; Luke 17:32", fun: "When Jehovah says ‘don’t look back’… don’t!", distractors: ["Abraham", "Isaac", "Esau"] },
+  { level: 2, character: "Potiphar", clue: "An important Egyptian official who bought Joseph as a slave", ref: "Genesis 39:1-6", fun: "Best worker he ever had – Joseph ran his whole house!", distractors: ["Pharaoh", "Esau", "Aaron"] },
+  { level: 2, character: "Miriam", clue: "Kept watch over her baby brother’s basket hidden in the reeds", ref: "Exodus 2:3-8", fun: "Big sister on duty – and she found him a nurse… their own mum!", distractors: ["Hannah", "Ruth", "Sarah"] },
+  { level: 2, character: "Aaron", clue: "Moses’ brother, whose staff grew flowers and ripe almonds", ref: "Numbers 17:8", fun: "A walking stick that grows its own snacks – handy!", distractors: ["Joshua", "Samuel", "Elijah"] },
+  { level: 2, character: "Joshua", clue: "Led Israel after Moses and marched them around the city of Jericho", ref: "Joshua 6:1-20", fun: "Seven days of marching – that’s a lot of steps!", distractors: ["Gideon", "Aaron", "Caleb"] },
+  { level: 2, character: "Rahab", clue: "Hid two spies, then let them down from her window with a rope", ref: "Joshua 2:1-21", fun: "A red cord in her window kept her whole family safe!", distractors: ["Ruth", "Miriam", "Naomi"] },
+  { level: 2, character: "Ruth", clue: "Collected leftover grain in Boaz’s field at harvest time", ref: "Ruth 2:2, 3", fun: "Hard-working and loyal – Boaz definitely noticed!", distractors: ["Naomi", "Hannah", "Sarah"] },
+  { level: 2, character: "Naomi", clue: "Went home to Bethlehem after losing her husband and sons, with her loyal daughter-in-law", ref: "Ruth 1:1-22", fun: "Ruth stuck with her like glue!", distractors: ["Ruth", "Rahab", "Hannah"] },
+  { level: 2, character: "Gideon", clue: "Beat the Midianites with just 300 men, horns, jars and torches", ref: "Judges 7:16-22", fun: "SMASH went the jars – and the enemy ran for it!", distractors: ["Joshua", "Samson", "Jonathan"] },
+  { level: 2, character: "Hannah", clue: "Prayed so hard that the high priest thought she was drunk", ref: "1 Samuel 1:9-17", fun: "Eli got it wrong – she was praying with all her heart!", distractors: ["Sarah", "Naomi", "Ruth"] },
+  { level: 2, character: "Samuel", clue: "As a boy, heard a voice calling his name in the night", ref: "1 Samuel 3:1-10", fun: "He kept running to Eli: ‘Here I am!’", distractors: ["Timothy", "Jonathan", "Aaron"] },
+  { level: 2, character: "Jonathan", clue: "King Saul’s son, who became David’s loyal friend", ref: "1 Samuel 18:1-4", fun: "Best friends – even when his dad wasn’t happy about it!", distractors: ["Samuel", "Joshua", "Gideon"] },
+  { level: 2, character: "Elijah", clue: "Challenged the prophets of Baal to a test on Mount Carmel", ref: "1 Kings 18:20-39", fun: "Baal never turned up – Jehovah did!", distractors: ["Jeremiah", "Samuel", "Aaron"] },
+  { level: 2, character: "Jeremiah", clue: "Thrown into a deep, muddy well until Ebed-melech came to the rescue", ref: "Jeremiah 38:6-13", fun: "Squelch! Not the best place for a nap.", distractors: ["Elijah", "Daniel", "John the Baptist"] },
+  { level: 2, character: "John the Baptist", clue: "Wore clothes of camel’s hair and ate locusts and wild honey", ref: "Matthew 3:1-4", fun: "Crunchy locusts with a honey dip – yum?!", distractors: ["Elijah", "Timothy", "Jeremiah"] },
+  { level: 2, character: "Timothy", clue: "Taught about Jehovah from childhood by his mother, Eunice, and grandmother, Lois", ref: "2 Timothy 1:5; 3:15", fun: "Mum and Gran – the best Bible teachers around!", distractors: ["Samuel", "Jonathan", "John the Baptist"] },
+
+  /* ---------- Level 3: Expert ---------- */
+  { level: 3, character: "Enoch", clue: "Walked with God and warned the ungodly that Jehovah would judge them", ref: "Genesis 5:21-24; Jude 14, 15", fun: "Just seven generations from Adam – and brave as anything!", distractors: ["Noah", "Abel", "Caleb"] },
+  { level: 3, character: "Rebekah", clue: "Offered to draw water from the well for a stranger’s ten camels", ref: "Genesis 24:15-20", fun: "Ten thirsty camels drink a LOT – and she kept going!", distractors: ["Sarah", "Rahab", "Abigail"] },
+  { level: 3, character: "Caleb", clue: "One of the 12 spies, who said: ‘Don’t be afraid – Jehovah will protect us’", ref: "Numbers 13:30; 14:6-9", fun: "The spies brought back figs, pomegranates and grapes – what a fruit basket!", distractors: ["Joshua", "Gideon", "Jephthah"] },
+  { level: 3, character: "Korah", clue: "Led a rebellion against Moses, and then the ground split open", ref: "Numbers 16:1-3, 31-33", fun: "Lesson learned: don’t argue with Jehovah’s choices!", distractors: ["Balaam", "Jephthah", "Caleb"] },
+  { level: 3, character: "Balaam", clue: "His donkey saw an angel blocking the road – and then spoke to him!", ref: "Numbers 22:21-31", fun: "When your donkey talks more sense than you, it’s time to listen!", distractors: ["Korah", "Enoch", "Nathan"] },
+  { level: 3, character: "Deborah", clue: "A prophetess who told Barak to take 10,000 men and fight Sisera’s army", ref: "Judges 4:4-9", fun: "Barak wouldn’t go without her – that’s how brave she was!", distractors: ["Jael", "Abigail", "Rebekah"] },
+  { level: 3, character: "Jael", clue: "When Sisera, the enemy army chief, hid in her tent, she defeated him", ref: "Judges 4:17-22", fun: "Sisera thought her tent was the perfect hiding place… wrong!", distractors: ["Deborah", "Abigail", "Rebekah"] },
+  { level: 3, character: "Jephthah", clue: "Made a promise to Jehovah, and his daughter helped him keep it", ref: "Judges 11:30-40", fun: "His daughter came out to meet him, dancing with a tambourine!", distractors: ["Caleb", "Manoah", "Korah"] },
+  { level: 3, character: "Manoah", clue: "An angel told his wife they would have a son who must never cut his hair", ref: "Judges 13:2-5, 24", fun: "Their son grew up to be Samson – no haircuts allowed!", distractors: ["Jephthah", "Enoch", "Nathan"] },
+  { level: 3, character: "Abigail", clue: "A brave woman who rode out to meet David and stop him taking revenge on her rude husband, Nabal", ref: "1 Samuel 25:18-35", fun: "Nabal was rude – but Abigail saved the day!", distractors: ["Deborah", "Jael", "Rebekah"] },
+  { level: 3, character: "Nathan", clue: "A prophet who told King David a story about a poor man’s little lamb", ref: "2 Samuel 12:1-7", fun: "How do you correct a king? Start with a story!", distractors: ["Elisha", "Jehoiada", "Enoch"] },
+  { level: 3, character: "Mephibosheth", clue: "Jonathan’s son, who couldn’t walk well, and was invited to eat at King David’s table", ref: "2 Samuel 9:6-13", fun: "Dinner at the palace every day – what a friend Jonathan had in David!", distractors: ["Jehoiada", "Josiah", "Nathan"] },
+  { level: 3, character: "Elisha", clue: "His servant saw the mountains full of horses and fiery war chariots", ref: "2 Kings 6:15-17", fun: "‘There are more with us than with them!’ – fiery ones, too!", distractors: ["Nathan", "Jehoiada", "Enoch"] },
+  { level: 3, character: "Naaman", clue: "An army chief who was cured after washing seven times in the Jordan River", ref: "2 Kings 5:1-14", fun: "Splash one… splash two… splash SEVEN – cured!", distractors: ["Manasseh", "Josiah", "Caleb"] },
+  { level: 3, character: "Jehoiada", clue: "A brave priest who made young Jehoash king and put a crown on his head", ref: "2 Kings 11:1-12", fun: "The crowd shouted: ‘Long live the king!’", distractors: ["Nathan", "Josiah", "Nehemiah"] },
+  { level: 3, character: "Hezekiah", clue: "A king who received threatening letters from Assyria’s king and prayed to Jehovah for help", ref: "2 Kings 19:14-19, 35", fun: "One angel against a whole army – no contest!", distractors: ["Josiah", "Manasseh", "Jehoiada"] },
+  { level: 3, character: "Manasseh", clue: "A bad king who was taken to Babylon in chains, then humbly turned back to Jehovah", ref: "2 Chronicles 33:10-13", fun: "Proof that Jehovah forgives people who truly change!", distractors: ["Hezekiah", "Josiah", "Korah"] },
+  { level: 3, character: "Josiah", clue: "Became king at eight, and loved Jehovah’s Law when its scroll was found", ref: "2 Kings 22:1-13", fun: "King at eight – and you think homework is a big job!", distractors: ["Jehoiada", "Hezekiah", "Nehemiah"] },
+  { level: 3, character: "Nehemiah", clue: "Asked the Persian king for permission to rebuild Jerusalem’s walls", ref: "Nehemiah 2:1-8", fun: "A quick silent prayer, then he asked the king – brave!", distractors: ["Josiah", "Hezekiah", "Nathan"] },
+  { level: 3, character: "Stephen", clue: "On trial for his faith, he saw the heavens opened up", ref: "Acts 7:54-56", fun: "Jehovah gave him courage right when he needed it.", distractors: ["Nathan", "Enoch", "Naaman"] }
+];
+
+const RIGHT_LINES = ["Spot on!", "Brilliant!", "Nailed it!", "Bible detective!", "Wise as Solomon!", "Top marks!"];
+const WRONG_LINES = ["Oops – wrong scroll!", "Not quite – nice try!", "Close… but no camel!", "Uh-oh – back to the wilderness!", "Nope – different hero!", "Even Balaam’s donkey is shaking its head!"];
+
+
+const ROUND = 10;
+const UNLOCK_SCORE = 7;
+
+/* ---------- Sound ---------- */
 let actx = null;
 function audio() {
   if (!actx) {
@@ -737,8 +1127,7 @@ function tone(freq, start, dur, type, vol) {
   const ctx = audio();
   if (!ctx) return;
   const t = ctx.currentTime + start;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+  const osc = ctx.createOscillator(), gain = ctx.createGain();
   osc.type = type;
   osc.frequency.setValueAtTime(freq, t);
   gain.gain.setValueAtTime(0.0001, t);
@@ -769,33 +1158,83 @@ function shuffle(list) {
   }
   return a;
 }
-function remember(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
-function recall(key) { try { return localStorage.getItem(key) || ""; } catch (e) { return ""; } }
+const pick = list => list[Math.floor(Math.random() * list.length)];
+function load(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } }
+function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+
+/* ---------- Player progress (best score per level, per player, on this device) ---------- */
+let progress = load("whoisthis-progress", {});
+const playerKey = name => name.trim().toLowerCase();
+function bestFor(name, lv) { const p = progress[playerKey(name)]; return p && p.best ? (p.best[lv] || 0) : 0; }
+function unlockedFor(name, lv) {
+  if (lv === 1) return true;
+  const p = progress[playerKey(name)];
+  if (p && p.all) return true;
+  return bestFor(name, lv - 1) >= UNLOCK_SCORE;
+}
+function recordScore(name, lv, s) {
+  const k = playerKey(name);
+  progress[k] = progress[k] || { best: {} };
+  progress[k].best = progress[k].best || {};
+  progress[k].best[lv] = Math.max(progress[k].best[lv] || 0, s);
+  save("whoisthis-progress", progress);
+}
 
 /* ---------- Game state ---------- */
-let player = "", deck = [], idx = 0, score = 0, results = [];
+let player = "", level = 1, deck = [], idx = 0, score = 0, results = [];
 
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => { s.hidden = s.id !== id; });
   const playing = id === "play";
   $("playerTag").hidden = id === "start";
+  $("levelTag").hidden = id === "start";
   $("progress").hidden = !playing;
   $("scoreTag").hidden = !playing;
   window.scrollTo({ top: 0 });
 }
 
+function currentName() { return $("nameInput").value.trim().replace(/\s+/g, " "); }
+
+function drawLevelPicker() {
+  const name = currentName();
+  $("levelPicker").replaceChildren(...LEVELS.map(L => {
+    const open = name ? unlockedFor(name, L.n) : L.n === 1;
+    const b = el("button", "lvl" + (open ? "" : " locked"));
+    b.type = "button";
+    b.append(el("strong", null, `${open ? "" : "🔒 "}Level ${L.n}: ${L.name}`), el("span", null, L.blurb));
+    const best = name ? bestFor(name, L.n) : 0;
+    if (!open) b.append(el("span", null, `Score ${UNLOCK_SCORE}+ on Level ${L.n - 1} to unlock`));
+    else if (best) b.append(el("span", "best", `Best: ${best} / ${ROUND}`));
+    b.setAttribute("aria-disabled", String(!open));
+    b.addEventListener("click", () => startLevel(L.n));
+    return b;
+  }));
+}
+
+function startLevel(n) {
+  const name = currentName();
+  if (!name) { $("nameHint").textContent = "Type your name first."; $("nameInput").focus(); return; }
+  if (!unlockedFor(name, n)) { $("nameHint").textContent = `Score ${UNLOCK_SCORE} or more on Level ${n - 1} to unlock Level ${n}.`; return; }
+  $("nameHint").textContent = "";
+  player = name;
+  save("whoisthis-player", player);
+  level = n;
+  newGame();
+}
+
 function newGame() {
-  deck = shuffle(CHARACTERS).slice(0, Math.min(ROUND, CHARACTERS.length));
+  const pool = CHARACTERS.filter(c => c.level === level);
+  deck = shuffle(pool).slice(0, Math.min(ROUND, pool.length));
   idx = 0; score = 0; results = [];
   $("playerName").textContent = player;
+  $("levelName").textContent = `${level}: ${LEVELS[level - 1].name}`;
   $("score").textContent = "0";
   showScreen("play");
   showCard();
 }
 
 function drawDots() {
-  const dots = $("dots");
-  dots.replaceChildren(...deck.map((_, i) => {
+  $("dots").replaceChildren(...deck.map((_, i) => {
     const r = results[i];
     return el("span", "dot" + (r ? (r.right ? " ok" : " bad") : i === idx ? " now" : ""));
   }));
@@ -812,40 +1251,42 @@ function showCard() {
 function makeCard(data) {
   const card = el("article", "card");
   const inner = el("div", "inner");
+  const hidden = level === 3;
 
-  // Front: picture and clue
   const front = el("div", "face front");
   front.setAttribute("role", "button");
   front.tabIndex = 0;
   front.setAttribute("aria-label", `Clue: ${data.clue}. Tap to choose who this is.`);
-  const art = el("div", "art");
+  const art = el("div", "art" + (hidden ? " mystery" : ""));
   art.innerHTML = ART(data.character);
   if (data.image) {
     const img = el("img");
     img.alt = "";
-    img.decoding = "async";
     img.addEventListener("error", () => img.remove());
     img.src = data.image;
     art.appendChild(img);
   }
+  const mt = el("div", "mysteryTag");
+  mt.innerHTML = "<span><b>?</b>Picture appears after you answer</span>";
+  art.appendChild(mt);
   const tag = el("span", "tag", "Tap to answer");
   front.append(art, tag, el("div", "clue", data.clue));
 
-  // Back: question and choices
   const back = el("div", "face back");
   back.setAttribute("aria-hidden", "true");
   const top = el("div", "back-top");
-  const flipBack = el("button", "btn", "↩ See picture");
+  const flipBack = el("button", "btn", hidden ? "↩ See the clue" : "↩ See picture");
   flipBack.type = "button";
   const status = el("span", "status", "One go only!");
   status.setAttribute("aria-live", "polite");
   top.append(flipBack, status);
   const choices = el("div", "choices");
-  const last = idx === deck.length - 1;
-  const next = el("button", "btn primary next", last ? "See my score" : "Next card →");
+  const learn = el("p", "learn");
+  learn.hidden = true;
+  const next = el("button", "btn primary next", idx === deck.length - 1 ? "See my score" : "Next card →");
   next.type = "button";
   next.hidden = true;
-  back.append(top, el("p", "question", "Who is this?"), el("p", "back-clue", data.clue), choices, next);
+  back.append(top, el("p", "question", "Who is this?"), el("p", "back-clue", data.clue), choices, learn, next);
 
   let answered = false;
   const buttons = shuffle([data.character, ...data.distractors]).map(name => {
@@ -872,37 +1313,35 @@ function makeCard(data) {
     buttons.forEach(b => { b.disabled = true; });
     const right = name === data.character;
     results[idx] = { character: data.character, picked: name, right };
-
     if (right) {
       btn.classList.add("correct");
       card.classList.add("right");
-      status.textContent = "✓ Correct!";
+      status.textContent = "✓ " + pick(RIGHT_LINES);
       score++;
       $("score").textContent = score;
       chime();
     } else {
       btn.classList.add("picked-wrong");
       card.classList.add("wrong");
-      status.textContent = `It was ${data.character}`;
+      status.textContent = pick(WRONG_LINES);
       buzzer();
       if (navigator.vibrate) navigator.vibrate(150);
       setTimeout(() => rightBtn.classList.add("reveal"), 550);
     }
+    art.classList.remove("mystery");
+    flipBack.textContent = "↩ See picture";
     tag.textContent = (right ? "✓ " : "✗ ") + data.character;
+    learn.replaceChildren(el("span", "fun", "😄 " + data.fun), el("span", "ref", "📖 Read it: " + data.ref));
+    learn.hidden = false;
     drawDots();
     next.hidden = false;
     setTimeout(() => next.focus({ preventScroll: true }), 600);
   }
 
   front.addEventListener("click", () => setFlipped(true));
-  front.addEventListener("keydown", e => {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFlipped(true); }
-  });
+  front.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFlipped(true); } });
   flipBack.addEventListener("click", () => setFlipped(false));
-  next.addEventListener("click", () => {
-    idx++;
-    if (idx < deck.length) showCard(); else showResults();
-  });
+  next.addEventListener("click", () => { idx++; if (idx < deck.length) showCard(); else showResults(); });
   buttons.concat(flipBack, next).forEach(b => { b.tabIndex = -1; });
 
   inner.append(front, back);
@@ -910,15 +1349,29 @@ function makeCard(data) {
   return card;
 }
 
+function rankFor(s, total) {
+  const r = s / total;
+  if (r === 1) return ["👑 Wise as Solomon!", "A perfect score – every single one!"];
+  if (r >= 0.8) return ["🔍 Bible Detective", "Brilliant work – you really know your Bible characters."];
+  if (r >= 0.6) return ["📜 Scroll Explorer", "Good going! A couple more and you’ll be a detective."];
+  if (r >= 0.4) return ["🐑 Shepherd in Training", "Nice effort – have another go and beat your score!"];
+  return ["🏜️ Still in the Wilderness", "Don’t worry – Israel took 40 years! Have another go."];
+}
+
 function showResults() {
   const total = deck.length;
+  const wasUnlocked = level < 3 && unlockedFor(player, level + 1);
+  recordScore(player, level, score);
+  const nowUnlocked = level < 3 && unlockedFor(player, level + 1);
+  const [rank, msg] = rankFor(score, total);
   $("endTitle").textContent = `Well played, ${player}!`;
   $("endScore").textContent = `${score} / ${total}`;
-  $("endMsg").textContent =
-    score === total ? "A perfect score – every single one!" :
-    score >= total * 0.7 ? "Brilliant work – you really know your Bible characters." :
-    score >= total * 0.4 ? "Good effort! Have another go and see if you can beat it." :
-    "Keep practising – you’ll know them all in no time.";
+  $("endRank").textContent = rank;
+  $("endMsg").textContent = msg + (level < 3 && !nowUnlocked ? ` Score ${UNLOCK_SCORE} or more to unlock Level ${level + 1}.` : "");
+  const fresh = nowUnlocked && !wasUnlocked;
+  $("endUnlock").hidden = !fresh;
+  if (fresh) $("endUnlock").textContent = `🔓 Level ${level + 1}: ${LEVELS[level].name} unlocked!`;
+  $("nextLevel").hidden = !nowUnlocked;
   $("resultList").replaceChildren(...results.map(r => {
     const li = el("li", r.right ? "ok" : "bad");
     li.append(el("span", "mark", r.right ? "✓" : "✗"), el("span", null, r.character));
@@ -926,40 +1379,39 @@ function showResults() {
     return li;
   }));
   showScreen("end");
-  if (score >= total * 0.7) fanfare();
+  if (score >= UNLOCK_SCORE) fanfare();
 }
 
 /* ---------- Wiring ---------- */
-$("nameInput").value = recall("whoisthis-player");
-function startFromInput() {
-  try { beginGame(); }
-  catch (err) {
-    $("errBox").hidden = false;
-    $("errBox").textContent = "Something went wrong – please screenshot this: " + (err && err.message ? err.message : err);
-  }
-}
-function beginGame() {
-  const name = $("nameInput").value.trim().replace(/\s+/g, " ");
-  if (!name) {
-    $("nameHint").textContent = "Type your name to start.";
-    $("nameInput").focus();
+$("nameInput").value = load("whoisthis-player", "");
+$("nameInput").addEventListener("input", () => { $("nameHint").textContent = ""; drawLevelPicker(); });
+$("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("nameInput").blur(); } });
+
+let unlockArmed = false;
+$("unlockAll").addEventListener("click", () => {
+  const name = currentName();
+  const btn = $("unlockAll");
+  if (!name) { $("nameHint").textContent = "Type the player’s name first."; $("nameInput").focus(); return; }
+  if (!unlockArmed) {
+    unlockArmed = true;
+    btn.classList.add("armed");
+    btn.textContent = `Tap again to unlock all levels for ${name}`;
+    setTimeout(() => { unlockArmed = false; btn.classList.remove("armed"); btn.textContent = "Grown-ups: unlock all levels for this player"; }, 4000);
     return;
   }
-  $("nameHint").textContent = "";
-  player = name;
-  remember("whoisthis-player", player);
-  newGame();
-}
-$("startBtn").addEventListener("click", startFromInput);
-$("nameInput").addEventListener("keydown", e => {
-  if (e.key === "Enter") { e.preventDefault(); startFromInput(); }
+  unlockArmed = false;
+  const k = playerKey(name);
+  progress[k] = progress[k] || { best: {} };
+  progress[k].all = true;
+  save("whoisthis-progress", progress);
+  btn.classList.remove("armed");
+  btn.textContent = `All levels unlocked for ${name} ✓`;
+  drawLevelPicker();
 });
 $("again").addEventListener("click", newGame);
-$("changePlayer").addEventListener("click", () => {
-  $("nameInput").value = "";
-  showScreen("start");
-  $("nameInput").focus();
-});
+$("nextLevel").addEventListener("click", () => { level = Math.min(3, level + 1); newGame(); });
+$("home").addEventListener("click", () => { showScreen("start"); drawLevelPicker(); });
+drawLevelPicker();
 showScreen("start");
 </script>
 </body>
